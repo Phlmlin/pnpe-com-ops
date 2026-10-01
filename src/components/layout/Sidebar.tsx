@@ -162,7 +162,7 @@ export function Sidebar() {
           </div>
 
           {/* Section Équipe - Protégée */}
-          {(currentUser?.role === 'admin_directeur' || currentUser?.role === 'Chef de Service') && (
+          {(currentUser?.role === 'admin_directeur' || currentUser?.role === 'Admin / Directeur' || currentUser?.email === 'greenmoundounga@gmail.com' || currentUser?.role === 'Chef de Service') && (
             <div>
               <h2 className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Équipe</h2>
               <nav className="space-y-0.5">

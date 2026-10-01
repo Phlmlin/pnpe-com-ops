@@ -25,6 +25,7 @@ interface LivrablesContextType {
   addUtilisateur: (user: Omit<Utilisateur, 'id'> & { motDePasse?: string }) => void;
   rolesDisponibles: string[];
   currentUser: Utilisateur | null;
+  logout: () => Promise<void>;
 }
 
 const LivrablesContext = createContext<LivrablesContextType | undefined>(undefined);
@@ -374,10 +375,18 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     ]));
   }, [utilisateurs]);
 
+  const logout = async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
+    localStorage.clear();
+    window.location.href = '/login';
+  };
+
   return (
     <LivrablesContext.Provider value={{ 
       livrables, projets, utilisateurs, addLivrable, updateLivrableStatus, deleteLivrable, isLoading,
-      addProjet, addLotToProjet, addPartenaireToProjet, addUtilisateur, rolesDisponibles, currentUser
+      addProjet, addLotToProjet, addPartenaireToProjet, addUtilisateur, rolesDisponibles, currentUser, logout
     }}>
       {children}
     </LivrablesContext.Provider>

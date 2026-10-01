@@ -27,7 +27,7 @@ import { usePathname } from 'next/navigation';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { livrables, projets, utilisateurs, currentUser } = useLivrables();
+  const { livrables, projets, utilisateurs, currentUser, logout } = useLivrables();
   const { isDrawerOpen, openDrawer, closeDrawer, isProjetDrawerOpen, openProjetDrawer, closeProjetDrawer, openUserModal } = useUI();
   
   const validationsCount = livrables.filter(l => l.statut === 'en_validation').length;
@@ -181,7 +181,13 @@ export function Sidebar() {
         </div>
         
         {/* Footer Sidebar (Optional settings/help) */}
-        <div className="p-4 hairline-border-t">
+        <div className="p-4 hairline-border-t space-y-3">
+          <button 
+            onClick={() => logout()}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-white hover:bg-red-500 rounded-md transition-colors border border-red-100"
+          >
+            Déconnexion
+          </button>
           <div className="text-xs text-gray-400 flex justify-between items-center">
             <span>v1.0.0-beta</span>
             <span className="hover:text-pnpe-dark cursor-pointer">Aide</span>

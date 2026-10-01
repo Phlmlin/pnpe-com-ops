@@ -26,8 +26,8 @@ export default function CalendrierPage() {
     <div className="p-6 max-w-7xl mx-auto w-full h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight flex items-center gap-2">
-            <CalendarIcon size={24} className="text-pnpe-green" />
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight flex items-center gap-2">
+            <CalendarIcon size={24} className="text-pnpe-blue" />
             Calendrier Éditorial
           </h1>
         </div>
@@ -37,15 +37,15 @@ export default function CalendrierPage() {
             <Filter size={16} /> Filtrer par Canal
           </button>
           <div className="bg-white hairline-border rounded-md flex items-center p-1">
-            <button className="px-3 py-1 text-xs font-bold bg-gray-100 text-pnpe-blue rounded">Mois</button>
-            <button className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-pnpe-blue">Semaine</button>
+            <button className="px-3 py-1 text-xs font-bold bg-gray-100 text-pnpe-dark rounded">Mois</button>
+            <button className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-pnpe-dark">Semaine</button>
           </div>
         </div>
       </div>
 
       {/* Navigation Calendrier */}
       <div className="bg-white rounded-t-lg hairline-border hairline-border-b-0 p-4 flex justify-between items-center">
-        <h2 className="text-lg font-bold text-pnpe-blue">Octobre 2026</h2>
+        <h2 className="text-lg font-bold text-pnpe-dark">Octobre 2026</h2>
         <div className="flex gap-2">
           <button className="p-1 hairline-border rounded hover:bg-gray-50"><ChevronLeft size={20} className="text-gray-600" /></button>
           <button className="p-1 hairline-border rounded hover:bg-gray-50"><ChevronRight size={20} className="text-gray-600" /></button>
@@ -73,18 +73,22 @@ export default function CalendrierPage() {
               onClick={() => openDrawer()}
             >
               <div className="flex justify-between items-start mb-2">
-                <span className={`text-xs font-semibold block ${date === 5 ? 'text-pnpe-green bg-pnpe-green/10 w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
+                <span className={`text-xs font-semibold block ${date === 5 ? 'text-pnpe-blue bg-pnpe-blue/10 w-6 h-6 rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
                   {date}
                 </span>
                 <span className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs font-medium text-pnpe-green">+ Ajouter</span>
+                  <span className="text-xs font-medium text-pnpe-blue">+ Ajouter</span>
                 </span>
               </div>
               <div className="space-y-1.5" onClick={e => e.stopPropagation()}>
                 {items.map(l => (
-                  <div key={l.id} className={`text-[10px] font-medium px-2 py-1.5 rounded border leading-tight cursor-pointer hover:opacity-80 transition-opacity shadow-sm animate-in fade-in zoom-in duration-200 ${getCanalColor(l.canal)}`}>
-                    <div className="font-bold mb-0.5">{l.canal}</div>
-                    <div className="truncate opacity-90">{l.titre}</div>
+                  <div key={l.id} className="space-y-1">
+                    {l.canaux?.map(c => (
+                      <div key={c} className={`text-[10px] font-medium px-2 py-1.5 rounded border leading-tight cursor-pointer hover:opacity-80 transition-opacity shadow-sm animate-in fade-in zoom-in duration-200 ${getCanalColor(c)}`}>
+                        <div className="font-bold mb-0.5">{c}</div>
+                        <div className="truncate opacity-90">{l.titre}</div>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

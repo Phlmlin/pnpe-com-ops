@@ -8,7 +8,7 @@ export default function Dashboard() {
     <div className="p-6 max-w-7xl mx-auto w-full">
       <div className="mb-6 flex justify-between items-end">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight">Cockpit Opérationnel</h1>
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight">Cockpit Opérationnel</h1>
           <p className="text-sm text-gray-500 mt-1">Vue d'ensemble de l'activité de la Cellule Communication</p>
         </div>
         <div className="text-sm font-medium text-gray-500">
@@ -36,7 +36,7 @@ export default function Dashboard() {
           {/* Un espace libre pour un futur widget ou une image d'illustration, 
               ici on peut mettre un simple encart de notes rapides */}
           <div className="flex-1 bg-pnpe-blue/5 rounded-lg hairline-border p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-pnpe-blue/40 mb-2">Bloc-notes rapide</span>
+            <span className="text-pnpe-dark/40 mb-2">Bloc-notes rapide</span>
             <p className="text-xs text-gray-500 max-w-[200px]">
               Espace réservé pour la prise de notes ou les rappels urgents de la direction.
             </p>

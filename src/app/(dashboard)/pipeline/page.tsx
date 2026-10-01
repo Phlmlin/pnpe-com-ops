@@ -18,14 +18,14 @@ export default function PipelinePage() {
     { id: 'conception', label: 'En création', color: 'bg-blue-100 text-blue-700' },
     { id: 'en_validation', label: 'En révision (BAT)', color: 'bg-pnpe-amber/20 text-yellow-800' },
     { id: 'programme', label: 'Prêt / Programmé', color: 'bg-emerald-100 text-emerald-800' },
-    { id: 'publie', label: 'Publié / Archivé', color: 'bg-pnpe-green text-white' }
+    { id: 'publie', label: 'Publié / Archivé', color: 'bg-pnpe-blue text-white' }
   ];
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto w-full h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight flex items-center gap-2">
             <KanbanSquare size={24} className="text-pnpe-amber" />
             Pipeline de Production
           </h1>
@@ -68,7 +68,7 @@ export default function PipelinePage() {
               <div className="p-3 hairline-border-b flex justify-between items-center bg-white rounded-t-lg">
                 <div className="flex items-center gap-2">
                   <span className={`w-2.5 h-2.5 rounded-full ${colonne.color.split(' ')[0]}`}></span>
-                  <h3 className="text-sm font-bold text-pnpe-blue">{colonne.label}</h3>
+                  <h3 className="text-sm font-bold text-pnpe-dark">{colonne.label}</h3>
                 </div>
                 <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full transition-all">
                   {items.length}
@@ -95,7 +95,7 @@ export default function PipelinePage() {
                       </button>
                     </div>
                     
-                    <h4 className="text-sm font-semibold text-pnpe-blue mb-1 leading-tight">{livrable.titre}</h4>
+                    <h4 className="text-sm font-semibold text-pnpe-dark mb-1 leading-tight">{livrable.titre}</h4>
                     <p className="text-xs text-gray-500 line-clamp-2 mb-3">{livrable.brief}</p>
                     
                     <div className="flex justify-between items-center mt-auto pt-3 hairline-border-t">

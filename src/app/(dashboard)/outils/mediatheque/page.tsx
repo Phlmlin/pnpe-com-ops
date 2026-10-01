@@ -5,7 +5,7 @@ export default function MediathequePage() {
     <div className="p-6 max-w-7xl mx-auto w-full h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight flex items-center gap-2">
             <ImageIcon size={24} className="text-gray-400" />
             Médiathèque Centralisée
           </h1>
@@ -21,7 +21,7 @@ export default function MediathequePage() {
           <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 hairline-border">
             <ImageIcon size={24} />
           </div>
-          <h3 className="text-lg font-bold text-pnpe-blue mb-2">Aucun fichier</h3>
+          <h3 className="text-lg font-bold text-pnpe-dark mb-2">Aucun fichier</h3>
           <p className="text-sm text-gray-500">Commencez par importer des logos ou des visuels pour les utiliser dans vos briefs et livrables.</p>
         </div>
       </div>

@@ -39,8 +39,8 @@ export default function ValidationPage() {
     <div className="p-6 max-w-7xl mx-auto w-full h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight flex items-center gap-2">
-            <CheckCircle size={24} className="text-pnpe-green" />
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight flex items-center gap-2">
+            <CheckCircle size={24} className="text-pnpe-blue" />
             Centre de Validation (BAT)
           </h1>
           <p className="text-sm text-gray-500 mt-1">Examinez et approuvez les contenus avant publication.</p>
@@ -54,9 +54,9 @@ export default function ValidationPage() {
       {pendingLivrables.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-lg hairline-border p-10 shadow-sm">
           <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle size={32} className="text-pnpe-green" />
+            <CheckCircle size={32} className="text-pnpe-blue" />
           </div>
-          <h2 className="text-xl font-bold text-pnpe-blue mb-2">Tout est à jour !</h2>
+          <h2 className="text-xl font-bold text-pnpe-dark mb-2">Tout est à jour !</h2>
           <p className="text-gray-500 text-center max-w-md">
             Il n'y a aucun contenu en attente de validation pour le moment. L'équipe de création travaille sûrement sur les prochains livrables.
           </p>
@@ -68,7 +68,7 @@ export default function ValidationPage() {
               {/* Entête de la carte */}
               <div className="p-4 border-b border-gray-100 flex justify-between items-start">
                 <div>
-                  <h3 className="font-bold text-pnpe-blue leading-tight mb-1">{livrable.titre}</h3>
+                  <h3 className="font-bold text-pnpe-dark leading-tight mb-1">{livrable.titre}</h3>
                   <div className="text-xs text-gray-500 flex items-center gap-1">
                     Par <span className="font-medium text-gray-700">{getUserName(livrable.assigneA)}</span>
                   </div>
@@ -91,7 +91,7 @@ export default function ValidationPage() {
                 
                 {/* Overlay au survol */}
                 <div className="absolute inset-0 bg-pnpe-blue/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                  <button className="bg-white text-pnpe-blue font-bold px-4 py-2 rounded text-sm shadow-sm flex items-center gap-2">
+                  <button className="bg-white text-pnpe-dark font-bold px-4 py-2 rounded text-sm shadow-sm flex items-center gap-2">
                     <Eye size={16} /> Ouvrir en grand
                   </button>
                 </div>
@@ -106,10 +106,10 @@ export default function ValidationPage() {
                 
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gray-500">
-                    Cible : <strong className="text-gray-700">{livrable.canal}</strong>
+                    Cible : <strong className="text-gray-700">{livrable.canaux?.join(', ')}</strong>
                   </span>
                   <span className="text-gray-500">
-                    Date : <strong className="text-pnpe-blue">
+                    Date : <strong className="text-pnpe-dark">
                       {new Date(livrable.dateCible).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                     </strong>
                   </span>
@@ -127,10 +127,10 @@ export default function ValidationPage() {
                           type="datetime-local" 
                           value={inputValue}
                           onChange={e => setInputValue(e.target.value)}
-                          className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-pnpe-green focus:border-pnpe-green"
+                          className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-pnpe-blue focus:border-pnpe-blue"
                         />
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => submitAction(livrable.id)} className="flex-1 bg-pnpe-green text-white font-bold py-2 rounded text-sm">Confirmer</button>
+                          <button onClick={() => submitAction(livrable.id)} className="flex-1 bg-pnpe-blue text-white font-bold py-2 rounded text-sm">Confirmer</button>
                           <button onClick={() => setActiveAction(null)} className="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded text-sm">Annuler</button>
                         </div>
                       </>
@@ -154,7 +154,7 @@ export default function ValidationPage() {
                   <div className="flex gap-3">
                     <button 
                       onClick={() => handleActionClick(livrable, 'program')}
-                      className="flex-1 bg-pnpe-green hover:bg-pnpe-green-light text-white font-bold py-2.5 rounded flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      className="flex-1 bg-pnpe-blue hover:bg-pnpe-blue-hover text-white font-bold py-2.5 rounded flex items-center justify-center gap-2 transition-colors shadow-sm"
                     >
                       <Check size={16} />
                       Valider & Programmer

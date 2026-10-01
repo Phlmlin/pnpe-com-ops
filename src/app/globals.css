@@ -3,10 +3,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-pnpe-blue: #0B192C;
-  --color-pnpe-blue-light: #1E293B;
-  --color-pnpe-green: #00875A;
-  --color-pnpe-green-light: #00A389;
+  --color-pnpe-blue: #005BAC;
+  --color-pnpe-blue-hover: #004B8D;
+  --color-pnpe-blue-active: #003D73;
+  --color-pnpe-azur: #009EE2;
+  --color-pnpe-dark: #0A2540;
   --color-pnpe-amber: #D97706;
   --color-border: #E2E8F0;
   --color-background: #F8FAFC;

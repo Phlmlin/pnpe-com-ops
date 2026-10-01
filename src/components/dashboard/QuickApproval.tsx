@@ -35,7 +35,7 @@ export function QuickApproval() {
             <div className="relative bg-white border-l-4 border-l-pnpe-amber border-y border-r border-gray-200 rounded-md p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h4 className="text-sm font-bold text-pnpe-blue">{livrable.titre}</h4>
+                  <h4 className="text-sm font-bold text-pnpe-dark">{livrable.titre}</h4>
                   <p className="text-xs text-gray-500 mt-0.5">Proposé par <span className="font-medium text-gray-700">{getUserName(livrable.assigneA)}</span></p>
                 </div>
                 <span className="text-[10px] font-bold bg-pnpe-amber/10 text-yellow-800 border border-pnpe-amber/20 px-2 py-1 rounded">
@@ -45,15 +45,21 @@ export function QuickApproval() {
 
               {/* Preview zone */}
               <div className="w-full h-24 bg-gray-100 rounded mb-3 flex flex-col items-center justify-center text-gray-400 cursor-pointer relative overflow-hidden border border-dashed border-gray-300 hover:border-pnpe-blue transition-colors">
-                <Eye size={20} className="mb-1 opacity-50" />
-                <span className="text-[10px] uppercase font-bold tracking-wider">Aperçu {livrable.format}</span>
+                {livrable.piecesJointes && livrable.piecesJointes.length > 0 ? (
+                  <img src={livrable.piecesJointes[0]} alt="Aperçu" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <Eye size={20} className="mb-1 opacity-50" />
+                    <span className="text-[10px] uppercase font-bold tracking-wider">Aperçu {livrable.format}</span>
+                  </>
+                )}
               </div>
 
               {/* Actions */}
               <div className="flex gap-2 mt-4">
                 <button 
                   onClick={() => updateLivrableStatus(livrable.id, 'programme')}
-                  className="flex-1 bg-pnpe-green hover:bg-pnpe-green-light text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                  className="flex-1 bg-pnpe-blue hover:bg-pnpe-blue-hover text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors shadow-sm"
                 >
                   <Check size={14} />
                   Approuver

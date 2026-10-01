@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, UploadCloud, Calendar as CalendarIcon, Link as LinkIcon, User } from 'lucide-react';
 
 import { useLivrables } from '@/context/LivrablesContext';
@@ -12,16 +12,23 @@ interface NewLivrableDrawerProps {
 }
 
 export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
-  const { addLivrable, projets, utilisateurs } = useLivrables();
+  const { addLivrable, projets, utilisateurs, defaultProjetIdForDrawer, defaultLotIdForDrawer } = useLivrables();
   
   const [titre, setTitre] = useState('');
   const [format, setFormat] = useState<FormatLivrable>('Flyer');
-  const [canal, setCanal] = useState<Canal>('LinkedIn');
+  const [canaux, setCanaux] = useState<Canal[]>(['LinkedIn']);
   const [brief, setBrief] = useState('');
   const [date, setDate] = useState('');
   const [projetId, setProjetId] = useState('');
   const [assigneA, setAssigneA] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Initialize projetId if opened with a default
+  useEffect(() => {
+    if (isOpen && defaultProjetIdForDrawer) {
+      setProjetId(defaultProjetIdForDrawer);
+    }
+  }, [isOpen, defaultProjetIdForDrawer]);
   
   if (!isOpen) return null;
 
@@ -73,7 +80,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
     addLivrable({
       titre,
       format,
-      canal,
+      canaux,
       statut: 'en_validation', // Changement ici: direct en validation
       dateCible: new Date(date).toISOString(),
       brief: brief || 'Nouveau brief...',
@@ -81,7 +88,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
       projetId: projetId || undefined,
       assigneA: assigneA || undefined,
       piecesJointes: previewUrl ? [previewUrl] : undefined
-    });
+    }, defaultLotIdForDrawer || undefined);
     
     // Reset et fermeture
     setTitre('');
@@ -103,12 +110,12 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
         
         <div className="flex items-center justify-between p-6 hairline-border-b bg-gray-50/80">
           <div>
-            <h2 className="text-lg font-bold text-pnpe-blue">Nouveau Contenu</h2>
+            <h2 className="text-lg font-bold text-pnpe-dark">Nouveau Contenu</h2>
             <p className="text-xs text-gray-500">Créez un nouveau livrable ou une publication</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-pnpe-blue hover:bg-white rounded-full transition-colors hairline-border"
+            className="p-2 text-gray-400 hover:text-pnpe-dark hover:bg-white rounded-full transition-colors hairline-border"
           >
             <X size={18} />
           </button>
@@ -126,7 +133,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 onChange={e => setTitre(e.target.value)}
                 type="text" 
                 placeholder="Ex: Teaser vidéo J-15"
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green transition-colors"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue transition-colors"
               />
             </div>
 
@@ -137,7 +144,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 <select 
                   value={format}
                   onChange={e => setFormat(e.target.value as FormatLivrable)}
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 >
                   <option value="Flyer">Flyer</option>
                   <option value="Carrousel">Carrousel</option>
@@ -147,19 +154,19 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Canal cible</label>
-                <select 
-                  value={canal}
-                  onChange={e => setCanal(e.target.value as Canal)}
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
-                >
-                  <option value="Facebook">Facebook</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="TikTok">TikTok</option>
-                  <option value="X">X</option>
-                  <option value="Presse">Presse</option>
-                  <option value="Affichage">Affichage</option>
-                </select>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Canaux cibles</label>
+                <div className="flex flex-wrap gap-2">
+                  {(['Facebook', 'LinkedIn', 'TikTok', 'X', 'Presse', 'Affichage'] as Canal[]).map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setCanaux(prev => prev.includes(c) ? prev.filter(p => p !== c) : [...prev, c])}
+                      className={`px-3 py-1 text-xs rounded-full border transition-colors ${canaux.includes(c) ? 'bg-pnpe-blue text-white border-pnpe-blue font-bold' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -171,7 +178,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
               <select 
                 value={projetId}
                 onChange={e => setProjetId(e.target.value)}
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
               >
                 <option value="">-- Campagne Générale --</option>
                 {projets.map(p => (
@@ -190,7 +197,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 type="date" 
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
               />
             </div>
 
@@ -202,20 +209,20 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 onChange={e => setBrief(e.target.value)}
                 rows={4}
                 placeholder="Décrivez ce qui doit être produit..."
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green resize-none"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue resize-none"
               ></textarea>
             </div>
 
             {/* Fichiers */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Fichiers (Maquettes, Logos, etc.)</label>
-              <label className="w-full border-2 border-dashed border-gray-200 rounded-md p-6 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 hover:border-pnpe-green transition-colors cursor-pointer group">
+              <label className="w-full border-2 border-dashed border-gray-200 rounded-md p-6 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 hover:border-pnpe-blue transition-colors cursor-pointer group">
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                 {previewUrl ? (
                   <img src={previewUrl} alt="Aperçu" className="max-h-32 rounded-md object-contain" />
                 ) : (
                   <>
-                    <UploadCloud size={24} className="mb-2 group-hover:text-pnpe-green transition-colors" />
+                    <UploadCloud size={24} className="mb-2 group-hover:text-pnpe-blue transition-colors" />
                     <span className="text-sm font-medium">Cliquez ou glissez-déposez une image</span>
                   </>
                 )}
@@ -231,7 +238,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 <select 
                   value={assigneA}
                   onChange={e => setAssigneA(e.target.value)}
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 >
                   <option value="">Sélectionner...</option>
                   {utilisateurs.map(u => (
@@ -252,7 +259,7 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
             </button>
             <button 
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-pnpe-green rounded-md hover:bg-pnpe-green-light transition-colors shadow-sm"
+              className="px-4 py-2 text-sm font-medium text-white bg-pnpe-blue rounded-md hover:bg-pnpe-blue-hover transition-colors shadow-sm"
             >
               Créer le livrable
             </button>

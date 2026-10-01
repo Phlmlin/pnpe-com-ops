@@ -26,9 +26,13 @@ export default function OffresPage() {
 
   const handleDownloadAndClose = (item: Livrable) => {
     // 1. Téléchargement si c'est une image base64
-    if (item.brief && item.brief.startsWith('data:image')) {
+    const imageUrl = (item.piecesJointes && item.piecesJointes[0] && item.piecesJointes[0].startsWith('data:image')) 
+      ? item.piecesJointes[0] 
+      : (item.brief && item.brief.startsWith('data:image')) ? item.brief : null;
+      
+    if (imageUrl) {
       const link = document.createElement('a');
-      link.href = item.brief;
+      link.href = imageUrl;
       link.download = `offre_${item.id}.png`;
       document.body.appendChild(link);
       link.click();
@@ -43,15 +47,15 @@ export default function OffresPage() {
     <div className="p-6 max-w-[1600px] mx-auto w-full h-full flex flex-col">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-pnpe-blue tracking-tight flex items-center gap-2">
-            <Briefcase size={24} className="text-pnpe-green" />
+          <h1 className="text-2xl font-bold text-pnpe-dark tracking-tight flex items-center gap-2">
+            <Briefcase size={24} className="text-pnpe-blue" />
             Circuit de validation des Offres
           </h1>
           <p className="text-sm text-gray-500 mt-1">Workflow rapide pour remplacer WhatsApp</p>
         </div>
         <button 
           onClick={() => setIsDepotOpen(true)}
-          className="bg-pnpe-green hover:bg-pnpe-green-light text-white px-6 py-3 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+          className="bg-pnpe-blue hover:bg-pnpe-blue-hover text-white px-6 py-3 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
         >
           <Plus size={20} />
           Déposer une offre traitée
@@ -82,7 +86,7 @@ export default function OffresPage() {
         <Column 
           title="Validé & Programmé" 
           count={offresValidees.length} 
-          color="bg-pnpe-green/20 text-green-800 border-pnpe-green"
+          color="bg-pnpe-blue/20 text-green-800 border-pnpe-blue"
           items={offresValidees}
           getUserName={getUserName}
           onDownload={handleDownloadAndClose}
@@ -97,10 +101,11 @@ export default function OffresPage() {
             addLivrable({
               titre: `[OFFRE] Offre Canva - ${new Date().toLocaleDateString()}`,
               format: 'Flyer',
-              canal: data.canal,
+              canaux: data.canaux,
               statut: 'en_validation',
               dateCible: new Date().toISOString(),
-              brief: data.imageString, // On utilise le brief pour stocker l'image en base64
+              brief: "Offre d'emploi exportée de Canva",
+              piecesJointes: data.imageString ? [data.imageString] : [],
               commentaires: []
             });
             setIsDepotOpen(false);
@@ -144,14 +149,16 @@ function Column({ title, count, color, items, onClickCard, getUserName, onDownlo
             <div onClick={() => onClickCard && onClickCard(item)}>
               {/* Si c'est une image base64 on l'affiche, sinon placeholder */}
               <div className="w-full h-32 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
-                {item.brief && item.brief.startsWith('data:image') ? (
+                {item.piecesJointes && item.piecesJointes.length > 0 && item.piecesJointes[0].startsWith('data:image') ? (
+                  <img src={item.piecesJointes[0]} alt="Visuel" className="w-full h-full object-cover" />
+                ) : item.brief && item.brief.startsWith('data:image') ? (
                   <img src={item.brief} alt="Visuel" className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon size={24} className="text-gray-300" />
                 )}
               </div>
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 text-gray-600 rounded uppercase">{item.canal}</span>
+                <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 text-gray-600 rounded uppercase">{item.canaux?.join(', ')}</span>
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <Clock size={12} /> {new Date(item.dateCible).toLocaleDateString()}
                 </span>
@@ -193,7 +200,7 @@ function Column({ title, count, color, items, onClickCard, getUserName, onDownlo
 function DepotModal({ onClose, onSubmit }: any) {
   const [previewUrl, setPreviewUrl] = useState('');
   const [imageString, setImageString] = useState('');
-  const [canal, setCanal] = useState<Canal>('LinkedIn');
+  const [canaux, setCanaux] = useState<Canal[]>(['LinkedIn']);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,7 +252,7 @@ function DepotModal({ onClose, onSubmit }: any) {
     <div className="fixed inset-0 bg-pnpe-blue/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 className="font-bold text-pnpe-blue">Déposer une offre (Depuis Canva)</h2>
+          <h2 className="font-bold text-pnpe-dark">Déposer une offre (Depuis Canva)</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
         
@@ -255,7 +262,7 @@ function DepotModal({ onClose, onSubmit }: any) {
             <label className="block text-xs font-semibold text-gray-700 mb-2">Visuel de l'offre (PNG/JPG)</label>
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 hover:border-pnpe-green transition-colors overflow-hidden relative"
+              className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 hover:border-pnpe-blue transition-colors overflow-hidden relative"
             >
               {(previewUrl || imageString) ? (
                 <img src={previewUrl || imageString} alt="Preview" className="w-full h-full object-contain" />
@@ -271,17 +278,17 @@ function DepotModal({ onClose, onSubmit }: any) {
 
           {/* Canal */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Canal de diffusion</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-2">Canaux de diffusion</label>
             <div className="flex gap-3">
               <button 
-                onClick={() => setCanal('LinkedIn')}
-                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canal === 'LinkedIn' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                onClick={() => setCanaux(prev => prev.includes('LinkedIn') ? prev.filter(c => c !== 'LinkedIn') : [...prev, 'LinkedIn'])}
+                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canaux.includes('LinkedIn') ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
               >
                 LinkedIn
               </button>
               <button 
-                onClick={() => setCanal('Facebook')}
-                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canal === 'Facebook' ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                onClick={() => setCanaux(prev => prev.includes('Facebook') ? prev.filter(c => c !== 'Facebook') : [...prev, 'Facebook'])}
+                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canaux.includes('Facebook') ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
               >
                 Facebook
               </button>
@@ -291,8 +298,8 @@ function DepotModal({ onClose, onSubmit }: any) {
 
         <div className="p-4 bg-gray-50 border-t border-gray-100">
           <button 
-            disabled={!imageString}
-            onClick={() => onSubmit({ imageString, canal })}
+            disabled={!imageString || canaux.length === 0}
+            onClick={() => onSubmit({ imageString, canaux })}
             className="w-full bg-pnpe-blue hover:bg-pnpe-blue-light disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
           >
             Envoyer pour validation
@@ -314,7 +321,9 @@ function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
         
         {/* Colonne Image (Grand format) */}
         <div className="flex-1 bg-gray-900 flex items-center justify-center p-4">
-          {livrable.brief && livrable.brief.startsWith('data:image') ? (
+          {livrable.piecesJointes && livrable.piecesJointes.length > 0 && livrable.piecesJointes[0].startsWith('data:image') ? (
+            <img src={livrable.piecesJointes[0]} alt="Visuel" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+          ) : livrable.brief && livrable.brief.startsWith('data:image') ? (
             <img src={livrable.brief} alt="Visuel" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
           ) : (
             <div className="text-gray-500 flex flex-col items-center">
@@ -327,7 +336,7 @@ function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
         {/* Colonne Actions */}
         <div className="w-96 bg-white flex flex-col">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="font-bold text-pnpe-blue text-lg">Validation</h2>
+            <h2 className="font-bold text-pnpe-dark text-lg">Validation</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
           </div>
 
@@ -341,12 +350,12 @@ function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
                   type="datetime-local" 
                   value={date}
                   onChange={e => setDate(e.target.value)}
-                  className="w-full text-sm p-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:border-pnpe-green"
+                  className="w-full text-sm p-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:border-pnpe-blue"
                 />
               </div>
               <button 
                 onClick={() => onValidate(date)}
-                className="w-full bg-pnpe-green hover:bg-pnpe-green-light text-white font-bold py-3 rounded-md transition-colors"
+                className="w-full bg-pnpe-blue hover:bg-pnpe-blue-hover text-white font-bold py-3 rounded-md transition-colors"
               >
                 Valider & Programmer
               </button>

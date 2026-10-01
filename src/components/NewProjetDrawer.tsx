@@ -55,15 +55,15 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
         
         <div className="flex items-center justify-between p-6 hairline-border-b bg-gray-50/80">
           <div>
-            <h2 className="text-lg font-bold text-pnpe-blue flex items-center gap-2">
-              <Target size={18} className="text-pnpe-green" />
+            <h2 className="text-lg font-bold text-pnpe-dark flex items-center gap-2">
+              <Target size={18} className="text-pnpe-blue" />
               Nouvel Événement
             </h2>
             <p className="text-xs text-gray-500">Ajouter un nouveau projet ou événement</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-pnpe-blue hover:bg-white rounded-full transition-colors hairline-border"
+            className="p-2 text-gray-400 hover:text-pnpe-dark hover:bg-white rounded-full transition-colors hairline-border"
           >
             <X size={18} />
           </button>
@@ -81,7 +81,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                 onChange={e => setNom(e.target.value)}
                 type="text" 
                 placeholder="Ex: Caravane de l'Emploi 2026"
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green transition-colors"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue transition-colors"
               />
             </div>
 
@@ -93,7 +93,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Décrivez brièvement le projet..."
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green resize-none"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue resize-none"
               ></textarea>
             </div>
 
@@ -108,7 +108,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                   value={dateDebut}
                   onChange={e => setDateDebut(e.target.value)}
                   type="date" 
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 />
               </div>
               <div>
@@ -120,7 +120,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                   value={dateFin}
                   onChange={e => setDateFin(e.target.value)}
                   type="date" 
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 />
               </div>
             </div>
@@ -136,7 +136,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                   onChange={e => setLieu(e.target.value)}
                   type="text" 
                   placeholder="Ex: Libreville, Gabon"
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 />
               </div>
               <div>
@@ -148,7 +148,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
                   onChange={e => setBudget(e.target.value)}
                   type="number" 
                   placeholder="Ex: 5000000"
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-green focus:border-pnpe-green"
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
                 />
               </div>
             </div>
@@ -165,7 +165,7 @@ export function NewProjetDrawer({ isOpen, onClose }: NewProjetDrawerProps) {
             </button>
             <button 
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-pnpe-green rounded-md hover:bg-pnpe-green-light transition-colors shadow-sm"
+              className="px-4 py-2 text-sm font-medium text-white bg-pnpe-blue rounded-md hover:bg-pnpe-blue-hover transition-colors shadow-sm"
             >
               Créer l'événement
             </button>

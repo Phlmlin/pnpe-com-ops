@@ -1,11 +1,11 @@
 "use client";
 
-import { CalendarRange, CheckCircle, Clock, Search } from 'lucide-react';
+import { CalendarRange, CheckCircle, Clock, Search, Plus } from 'lucide-react';
 import { ProjetEvenement } from '@/types/com-ops';
 import { useLivrables } from '@/context/LivrablesContext';
 
 export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
-  const { livrables: contextLivrables } = useLivrables();
+  const { livrables: contextLivrables, openDrawer } = useLivrables();
   
   // Récupérer tous les livrables associés au projet via le champ projetId, ou via les lots
   const livrables = contextLivrables.filter(l => l.projetId === projet.id || projet.lotsTravail.flatMap(lot => lot.livrablesId).includes(l.id))
@@ -14,16 +14,22 @@ export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
   return (
     <div className="bg-white rounded-lg hairline-border shadow-sm flex flex-col h-[400px]">
       <div className="p-4 hairline-border-b flex justify-between items-center bg-gray-50/50 rounded-t-lg">
-        <h2 className="text-sm font-semibold text-pnpe-blue uppercase tracking-wider flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-pnpe-dark uppercase tracking-wider flex items-center gap-2">
           <CalendarRange size={16} className="text-gray-400" />
           Rétroplanning Actif
         </h2>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative">
             <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder="Filtrer..." className="text-xs pl-7 pr-2 py-1 hairline-border rounded focus:outline-none focus:ring-1 focus:ring-pnpe-green" />
+            <input type="text" placeholder="Filtrer..." className="text-xs pl-7 pr-2 py-1.5 hairline-border rounded focus:outline-none focus:ring-1 focus:ring-pnpe-blue" />
           </div>
+          <button 
+            onClick={() => openDrawer(projet.id)}
+            className="flex items-center gap-1 bg-pnpe-blue hover:bg-pnpe-blue-light text-white text-xs font-bold py-1.5 px-3 rounded transition-colors"
+          >
+            <Plus size={14} /> Ajouter un livrable
+          </button>
         </div>
       </div>
 
@@ -42,7 +48,7 @@ export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
             {livrables.map(livrable => (
               <tr key={livrable.id} className="hairline-border-b last:border-0 hover:bg-gray-50 transition-colors">
                 <td className="py-3 pr-4">
-                  <span className="font-medium text-pnpe-blue line-clamp-1">{livrable.titre}</span>
+                  <span className="font-medium text-pnpe-dark line-clamp-1">{livrable.titre}</span>
                 </td>
                 <td className="py-3 text-gray-600 text-xs">
                   <span className="bg-gray-100 px-2 py-1 rounded">{livrable.format}</span>
@@ -55,7 +61,7 @@ export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
                 </td>
                 <td className="py-3 text-right">
                   {livrable.statut === 'publie' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-pnpe-green bg-pnpe-green/10 px-2 py-1 rounded-md">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-pnpe-blue bg-pnpe-blue/10 px-2 py-1 rounded-md">
                       <CheckCircle size={14} /> Publié
                     </span>
                   ) : livrable.statut === 'en_validation' ? (

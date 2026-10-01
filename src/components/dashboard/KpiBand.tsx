@@ -15,7 +15,7 @@ export function KpiBand() {
       value: publicationsSemaine.toString(),
       trend: "+2 par rapport à S-1",
       icon: FileText,
-      color: "text-pnpe-blue",
+      color: "text-pnpe-dark",
       bgColor: "bg-pnpe-blue/10"
     },
     {
@@ -23,8 +23,8 @@ export function KpiBand() {
       value: validationsEnAttente.toString(),
       trend: validationsEnAttente > 0 ? "Action requise" : "Tout est à jour",
       icon: CheckCircle,
-      color: "text-pnpe-green",
-      bgColor: "bg-pnpe-green/10",
+      color: "text-pnpe-blue",
+      bgColor: "bg-pnpe-blue/10",
       highlight: validationsEnAttente > 0
     },
     {
@@ -40,7 +40,7 @@ export function KpiBand() {
       value: "J-45",
       trend: "15 Nov 2026",
       icon: Timer,
-      color: "text-pnpe-blue",
+      color: "text-pnpe-dark",
       bgColor: "bg-gray-100"
     }
   ];
@@ -50,11 +50,11 @@ export function KpiBand() {
       {kpis.map((kpi, index) => (
         <div 
           key={index} 
-          className={`bg-white rounded-lg hairline-border p-4 shadow-sm flex items-start justify-between transition-all ${kpi.highlight ? 'ring-1 ring-pnpe-green shadow-pnpe-green/10' : ''}`}
+          className={`bg-white rounded-lg hairline-border p-4 shadow-sm flex items-start justify-between transition-all ${kpi.highlight ? 'ring-1 ring-pnpe-blue shadow-pnpe-blue/10' : ''}`}
         >
           <div>
             <p className="text-xs font-medium text-gray-500 mb-1">{kpi.title}</p>
-            <h3 className="text-2xl font-bold text-pnpe-blue">{kpi.value}</h3>
+            <h3 className="text-2xl font-bold text-pnpe-dark">{kpi.value}</h3>
             <p className="text-xs text-gray-400 mt-1">{kpi.trend}</p>
           </div>
           <div className={`p-2 rounded-md ${kpi.bgColor}`}>

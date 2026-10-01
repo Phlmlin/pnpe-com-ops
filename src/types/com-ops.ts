@@ -1,8 +1,14 @@
-export type Role = "admin_directeur" | "redacteur_cm" | "graphiste_video" | "partenaire_externe";
+export type Role = string;
 
 export type FormatLivrable = "Flyer" | "Carrousel" | "Vidéo" | "Communiqué" | "Bâche" | "Offre";
 export type Canal = "Facebook" | "LinkedIn" | "TikTok" | "X" | "Presse" | "Affichage";
 export type StatutLivrable = "brief" | "conception" | "en_validation" | "programme" | "publie" | "a_corriger";
+
+export interface DroitsUtilisateur {
+  depotContenu: boolean;      // Peut importer des visuels et rédiger des textes
+  pouvoirValidation: boolean; // Peut approuver, refuser et programmer les posts
+  accesLimite: boolean;       // Accès cloisonné à un projet spécifique
+}
 
 export interface Utilisateur {
   id: string;
@@ -11,6 +17,8 @@ export interface Utilisateur {
   email: string;
   role: Role;
   avatarUrl?: string;
+  droits: DroitsUtilisateur;
+  projetLimiteId?: string; // Si accesLimite, quel projet
 }
 
 export interface Commentaire {
@@ -24,7 +32,7 @@ export interface Livrable {
   id: string;
   titre: string;
   format: FormatLivrable;
-  canal: Canal;
+  canaux: Canal[];
   statut: StatutLivrable;
   dateCible: string;
   assigneA?: string; // Utilisateur ID
@@ -59,3 +67,11 @@ export interface ProjetEvenement {
   partenairesExternes: string[]; // Utilisateurs ID
   jaugeAvancement: number; // 0 à 100
 }
+
+// Rôles par défaut de l'application
+export const ROLES_PAR_DEFAUT = [
+  'Admin / Directeur',
+  'Rédacteur / CM',
+  'Graphiste / Vidéo',
+  'Partenaire Externe',
+];

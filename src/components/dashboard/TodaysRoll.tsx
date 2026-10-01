@@ -14,7 +14,7 @@ export function TodaysRoll() {
   return (
     <div className="bg-white rounded-lg hairline-border shadow-sm flex flex-col h-full overflow-hidden">
       <div className="p-4 hairline-border-b flex justify-between items-center bg-gray-50/50">
-        <h2 className="text-sm font-semibold text-pnpe-blue uppercase tracking-wider">À publier aujourd'hui</h2>
+        <h2 className="text-sm font-semibold text-pnpe-dark uppercase tracking-wider">À publier aujourd'hui</h2>
         <span className="text-xs font-medium bg-gray-200 text-gray-700 px-2 py-1 rounded-full">{todayLivrables.length} actions</span>
       </div>
       
@@ -34,29 +34,31 @@ export function TodaysRoll() {
                   <span className="text-[10px] font-bold text-gray-500 mb-1">
                     {new Date(livrable.dateCible).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  <div className={`w-3 h-3 rounded-full border-2 bg-white ${livrable.statut === 'publie' ? 'border-pnpe-green' : 'border-pnpe-blue group-hover:scale-125 transition-transform'}`}></div>
+                  <div className={`w-3 h-3 rounded-full border-2 bg-white ${livrable.statut === 'publie' ? 'border-pnpe-blue' : 'border-pnpe-blue group-hover:scale-125 transition-transform'}`}></div>
                 </div>
 
                 {/* Contenu */}
                 <div className="flex-1 min-w-0 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-lg p-3 group-hover:border-pnpe-blue/30">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
-                        livrable.canal === 'LinkedIn' ? 'bg-blue-100 text-blue-700' :
-                        livrable.canal === 'Facebook' ? 'bg-blue-600 text-white' :
-                        'bg-gray-200 text-gray-700'
-                      }`}>
-                        {livrable.canal}
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {livrable.canaux?.map(canal => (
+                        <span key={canal} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${
+                          canal === 'LinkedIn' ? 'bg-blue-100 text-blue-700' :
+                          canal === 'Facebook' ? 'bg-blue-600 text-white' :
+                          'bg-gray-200 text-gray-700'
+                        }`}>
+                          {canal}
+                        </span>
+                      ))}
                       <span className="text-[10px] text-gray-400 font-medium">{livrable.format}</span>
                     </div>
                   </div>
                   
-                  <h4 className="text-sm font-semibold text-pnpe-blue leading-tight mb-1">{livrable.titre}</h4>
+                  <h4 className="text-sm font-semibold text-pnpe-dark leading-tight mb-1">{livrable.titre}</h4>
                   
                   <div className="mt-3 flex items-center justify-end">
                     {livrable.statut === 'publie' ? (
-                      <span className="text-xs font-bold text-pnpe-green flex items-center gap-1">
+                      <span className="text-xs font-bold text-pnpe-blue flex items-center gap-1">
                         <Clock size={12} />
                         Déjà publié
                       </span>

@@ -157,7 +157,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
   const addLivrable = async (livrable: Omit<Livrable, 'id'>) => {
     if (isSupabaseConfigured) {
       try {
-        const { error } = await supabase.from('livrables').insert([{
+        const { data, error } = await supabase.from('livrables').insert([{
           titre: livrable.titre,
           format: livrable.format,
           canal: livrable.canal,
@@ -166,8 +166,19 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           brief: livrable.brief,
           assigne_a: livrable.assigneA,
           projet_id: livrable.projetId
-        }]);
+        }]).select().single();
         if (error) throw error;
+        
+        // Optimistic UI : on ajoute l'élément dans le state avec son vrai ID fraîchement créé
+        const newLivrable: Livrable = {
+          ...data,
+          dateCible: data.date_cible,
+          assigneA: data.assigne_a,
+          projetId: data.projet_id,
+          commentaires: []
+        };
+        setLivrables(prev => [...prev, newLivrable]);
+        
         addToast('Livrable sauvegardé dans Supabase !', 'success');
       } catch (err: any) {
         console.error("SUPABASE ERROR:", JSON.stringify(err, null, 2), err);

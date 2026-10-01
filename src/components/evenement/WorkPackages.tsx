@@ -3,10 +3,12 @@
 import { Layers, FileText, Settings2, Plus, X } from 'lucide-react';
 import { ProjetEvenement } from '@/types/com-ops';
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 import { useState } from 'react';
 
 export function WorkPackages({ projet }: { projet: ProjetEvenement }) {
-  const { livrables, addLotToProjet, openDrawer } = useLivrables();
+  const { livrables, addLotToProjet } = useLivrables();
+  const { openDrawer } = useUI();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nom, setNom] = useState('');
   const [description, setDescription] = useState('');

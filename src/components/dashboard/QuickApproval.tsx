@@ -4,8 +4,10 @@ import { useLivrables } from '@/context/LivrablesContext';
 import { Check, Eye, MessageSquare } from 'lucide-react';
 
 export function QuickApproval() {
-  const { livrables, utilisateurs, updateLivrableStatus } = useLivrables();
+  const { livrables, utilisateurs, updateLivrableStatus, currentUser } = useLivrables();
   const pendingLivrables = livrables.filter(l => l.statut === 'en_validation');
+
+  const canValidate = currentUser?.droits?.pouvoirValidation === true;
 
   const getUserName = (id?: string) => {
     const user = utilisateurs.find(u => u.id === id);
@@ -55,23 +57,29 @@ export function QuickApproval() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-2 mt-4">
-                <button 
-                  onClick={() => updateLivrableStatus(livrable.id, 'programme')}
-                  className="flex-1 bg-pnpe-blue hover:bg-pnpe-blue-hover text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                >
-                  <Check size={14} />
-                  Approuver
-                </button>
-                <button 
-                  onClick={() => updateLivrableStatus(livrable.id, 'conception')}
-                  className="flex-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <MessageSquare size={14} />
-                  Retouches
-                </button>
-              </div>
+              {/* Actions - Seulement pour ceux qui ont le droit de validation */}
+              {canValidate ? (
+                <div className="flex gap-2 mt-4">
+                  <button 
+                    onClick={() => updateLivrableStatus(livrable.id, 'programme')}
+                    className="flex-1 bg-pnpe-blue hover:bg-pnpe-blue-hover text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                  >
+                    <Check size={14} />
+                    Approuver
+                  </button>
+                  <button 
+                    onClick={() => updateLivrableStatus(livrable.id, 'a_corriger')}
+                    className="flex-1 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-bold py-2 rounded flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <MessageSquare size={14} />
+                    Retouches
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-4 bg-orange-50 border border-orange-100 rounded p-2 text-center text-xs text-orange-800 font-medium">
+                  En attente de validation par la direction
+                </div>
+              )}
             </div>
           </div>
         ))}

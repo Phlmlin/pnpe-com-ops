@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { LivrablesProvider } from "@/context/LivrablesContext";
+import { UIProvider } from "@/context/UIContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -18,9 +19,11 @@ export default function RootLayout({
   return (
     <html lang="fr" className={inter.variable}>
       <body className="h-screen w-screen overflow-hidden bg-background">
-        <LivrablesProvider>
-          {children}
-        </LivrablesProvider>
+        <UIProvider>
+          <LivrablesProvider>
+            {children}
+          </LivrablesProvider>
+        </UIProvider>
       </body>
     </html>
   );

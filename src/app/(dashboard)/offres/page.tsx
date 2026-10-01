@@ -2,22 +2,28 @@
 
 import { useState, useRef } from 'react';
 import { useLivrables } from '@/context/LivrablesContext';
-import { Briefcase, Plus, Image as ImageIcon, Check, X, MessageSquare, Clock, Calendar, Download } from 'lucide-react';
-import { Livrable, StatutLivrable, Canal } from '@/types/com-ops';
+import { useUI } from '@/context/UIContext';
+import { Briefcase, Plus, Image as ImageIcon, Check, X, MessageSquare, Clock, Calendar, Download, Loader2 } from 'lucide-react';
+import { Livrable, Canal } from '@/types/com-ops';
+import { uploadMediaToSupabase, dataURLtoBlob } from '@/utils/supabase/storageClient';
 
 export default function OffresPage() {
-  const { livrables, addLivrable, updateLivrableStatus, deleteLivrable, utilisateurs } = useLivrables();
+  const { livrables, addLivrable, updateLivrableStatus, utilisateurs, currentUser } = useLivrables();
+  const { addToast } = useUI();
   
   // États de la page
   const [isDepotOpen, setIsDepotOpen] = useState(false);
   const [validationLivrable, setValidationLivrable] = useState<Livrable | null>(null);
+  
+  // Droits RBAC
+  const canValidate = currentUser?.droits?.pouvoirValidation === true;
 
-  // Filtre des offres : on utilise 'Flyer' et un titre spécifique pour éviter les erreurs d'ENUM dans Supabase
-  const offres = livrables.filter(l => l.titre.startsWith('[OFFRE]'));
+  // Filtre des offres formel (format === 'Offre')
+  const offres = livrables.filter(l => l.format === 'Offre');
   
   const offresEnValidation = offres.filter(l => l.statut === 'en_validation');
   const offresACorriger = offres.filter(l => l.statut === 'a_corriger' || l.statut === 'conception');
-  const offresValidees = offres.filter(l => l.statut === 'programme' || l.statut === 'publie');
+  const offresValidees = offres.filter(l => l.statut === 'programme');
 
   const getUserName = (id?: string) => {
     const user = utilisateurs.find(u => u.id === id);
@@ -25,22 +31,27 @@ export default function OffresPage() {
   };
 
   const handleDownloadAndClose = (item: Livrable) => {
-    // 1. Téléchargement si c'est une image base64
-    const imageUrl = (item.piecesJointes && item.piecesJointes[0] && item.piecesJointes[0].startsWith('data:image')) 
-      ? item.piecesJointes[0] 
-      : (item.brief && item.brief.startsWith('data:image')) ? item.brief : null;
+    // 1. Téléchargement de l'image (si possible)
+    const imageUrl = (item.piecesJointes && item.piecesJointes.length > 0) ? item.piecesJointes[0] : null;
       
     if (imageUrl) {
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = `offre_${item.id}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Pour une URL distante, on ouvre dans un nouvel onglet ou on déclenche un fetch blob
+      // L'attribut download="file" ne marche bien que sur la même origine, on fallback sur window.open
+      if (imageUrl.startsWith('http')) {
+        window.open(imageUrl, '_blank');
+      } else {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `offre_${item.id}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
     
-    // 2. Suppression du post (clôture)
-    deleteLivrable(item.id);
+    // 2. Passage au statut publié pour archiver proprement (au lieu de deleteLivrable)
+    updateLivrableStatus(item.id, 'publie');
+    addToast('Offre archivée (statut Publié)', 'success');
   };
 
   return (
@@ -51,7 +62,7 @@ export default function OffresPage() {
             <Briefcase size={24} className="text-pnpe-blue" />
             Circuit de validation des Offres
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Workflow rapide pour remplacer WhatsApp</p>
+          <p className="text-sm text-gray-500 mt-1">Workflow rapide et structuré pour la publication des offres</p>
         </div>
         <button 
           onClick={() => setIsDepotOpen(true)}
@@ -69,7 +80,7 @@ export default function OffresPage() {
           count={offresEnValidation.length} 
           color="bg-orange-100 text-orange-800 border-orange-400"
           items={offresEnValidation}
-          onClickCard={setValidationLivrable}
+          onClickCard={canValidate ? setValidationLivrable : undefined}
           getUserName={getUserName}
         />
         
@@ -97,15 +108,15 @@ export default function OffresPage() {
       {isDepotOpen && (
         <DepotModal 
           onClose={() => setIsDepotOpen(false)} 
-          onSubmit={(data: any) => {
+          onSubmit={async (data: { imageUrl: string, canaux: Canal[] }) => {
             addLivrable({
-              titre: `[OFFRE] Offre Canva - ${new Date().toLocaleDateString()}`,
-              format: 'Flyer',
+              titre: `Offre Canva - ${new Date().toLocaleDateString()}`,
+              format: 'Offre', // Vrai format formel
               canaux: data.canaux,
               statut: 'en_validation',
               dateCible: new Date().toISOString(),
-              brief: "Offre d'emploi exportée de Canva",
-              piecesJointes: data.imageString ? [data.imageString] : [],
+              brief: "Offre d'emploi traitée",
+              piecesJointes: [data.imageUrl], // On sauvegarde la vraie URL du bucket
               commentaires: []
             });
             setIsDepotOpen(false);
@@ -114,7 +125,7 @@ export default function OffresPage() {
       )}
 
       {/* Modal de Validation */}
-      {validationLivrable && (
+      {validationLivrable && canValidate && (
         <ValidationModal
           livrable={validationLivrable}
           onClose={() => setValidationLivrable(null)}
@@ -147,12 +158,9 @@ function Column({ title, count, color, items, onClickCard, getUserName, onDownlo
             className={`bg-white rounded-lg hairline-border p-3 shadow-sm transition-all relative ${onClickCard ? 'cursor-pointer hover:shadow-md hover:border-pnpe-blue/30' : ''}`}
           >
             <div onClick={() => onClickCard && onClickCard(item)}>
-              {/* Si c'est une image base64 on l'affiche, sinon placeholder */}
               <div className="w-full h-32 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
-                {item.piecesJointes && item.piecesJointes.length > 0 && item.piecesJointes[0].startsWith('data:image') ? (
+                {item.piecesJointes && item.piecesJointes.length > 0 ? (
                   <img src={item.piecesJointes[0]} alt="Visuel" className="w-full h-full object-cover" />
-                ) : item.brief && item.brief.startsWith('data:image') ? (
-                  <img src={item.brief} alt="Visuel" className="w-full h-full object-cover" />
                 ) : (
                   <ImageIcon size={24} className="text-gray-300" />
                 )}
@@ -173,9 +181,9 @@ function Column({ title, count, color, items, onClickCard, getUserName, onDownlo
                   onDownload(item);
                 }}
                 className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs py-2 rounded transition-colors"
-                title="Télécharger l'image et retirer de la liste"
+                title="Télécharger l'image et archiver l'offre"
               >
-                <Download size={14} /> Télécharger & Clôturer
+                <Download size={14} /> Archiver l'offre
               </button>
             )}
           </div>
@@ -196,30 +204,55 @@ function Column({ title, count, color, items, onClickCard, getUserName, onDownlo
   );
 }
 
-// Modal de Dépôt
+// Modal de Dépôt avec upload Supabase Storage
 function DepotModal({ onClose, onSubmit }: any) {
   const [previewUrl, setPreviewUrl] = useState('');
-  const [imageString, setImageString] = useState('');
   const [canaux, setCanaux] = useState<Canal[]>(['LinkedIn']);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Instant preview
+      // Prévisualisation immédiate (Optimistic)
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
+    }
+  };
 
-      // Compression
-      try {
-        const compressed = await compressImage(file);
-        setImageString(compressed);
-      } catch (err) {
-        console.error("Erreur de compression", err);
-        // Fallback
-        const reader = new FileReader();
-        reader.onloadend = () => setImageString(reader.result as string);
-        reader.readAsDataURL(file);
+  const handleSubmit = async () => {
+    if (!previewUrl || canaux.length === 0) return;
+    setIsUploading(true);
+
+    try {
+      let finalUrl = previewUrl;
+
+      // Si c'est un object URL local, on récupère le fichier original depuis l'input
+      if (previewUrl.startsWith('blob:')) {
+        const file = fileInputRef.current?.files?.[0];
+        if (file) {
+          // On compresse et on upload vers le Bucket Supabase
+          const compressedDataUrl = await compressImage(file);
+          const blob = dataURLtoBlob(compressedDataUrl);
+          
+          const uploadedUrl = await uploadMediaToSupabase(blob, 'medias');
+          
+          if (uploadedUrl) {
+            finalUrl = uploadedUrl; // On utilise l'URL distante
+          } else {
+            console.warn("L'upload Supabase a échoué, on sauvegarde en base64 en mode fallback");
+            finalUrl = compressedDataUrl;
+          }
+        }
+      }
+
+      onSubmit({ imageUrl: finalUrl, canaux });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+      if (previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
       }
     }
   };
@@ -252,43 +285,43 @@ function DepotModal({ onClose, onSubmit }: any) {
     <div className="fixed inset-0 bg-pnpe-blue/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 className="font-bold text-pnpe-dark">Déposer une offre (Depuis Canva)</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <h2 className="font-bold text-pnpe-dark">Déposer une offre</h2>
+          <button onClick={onClose} disabled={isUploading} className="text-gray-400 hover:text-gray-600 disabled:opacity-50"><X size={20} /></button>
         </div>
         
         <div className="p-6 space-y-6">
-          {/* Dropzone */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-2">Visuel de l'offre (PNG/JPG)</label>
             <div 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 hover:border-pnpe-blue transition-colors overflow-hidden relative"
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              className={`w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 overflow-hidden relative transition-colors ${!isUploading ? 'cursor-pointer hover:bg-gray-100 hover:border-pnpe-blue' : 'opacity-80'}`}
             >
-              {(previewUrl || imageString) ? (
-                <img src={previewUrl || imageString} alt="Preview" className="w-full h-full object-contain" />
+              {previewUrl ? (
+                <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
               ) : (
                 <>
                   <ImageIcon size={32} className="text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500 font-medium">Cliquez ou glissez l'image ici</span>
+                  <span className="text-sm text-gray-500 font-medium">Cliquez pour ajouter l'image</span>
                 </>
               )}
             </div>
             <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
           </div>
 
-          {/* Canal */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-2">Canaux de diffusion</label>
             <div className="flex gap-3">
               <button 
+                disabled={isUploading}
                 onClick={() => setCanaux(prev => prev.includes('LinkedIn') ? prev.filter(c => c !== 'LinkedIn') : [...prev, 'LinkedIn'])}
-                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canaux.includes('LinkedIn') ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors disabled:opacity-50 ${canaux.includes('LinkedIn') ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
               >
                 LinkedIn
               </button>
               <button 
+                disabled={isUploading}
                 onClick={() => setCanaux(prev => prev.includes('Facebook') ? prev.filter(c => c !== 'Facebook') : [...prev, 'Facebook'])}
-                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors ${canaux.includes('Facebook') ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                className={`flex-1 py-2 rounded-md border text-sm font-bold transition-colors disabled:opacity-50 ${canaux.includes('Facebook') ? 'bg-blue-600 border-blue-700 text-white' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}
               >
                 Facebook
               </button>
@@ -298,11 +331,17 @@ function DepotModal({ onClose, onSubmit }: any) {
 
         <div className="p-4 bg-gray-50 border-t border-gray-100">
           <button 
-            disabled={!imageString || canaux.length === 0}
-            onClick={() => onSubmit({ imageString, canaux })}
-            className="w-full bg-pnpe-blue hover:bg-pnpe-blue-light disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+            disabled={!previewUrl || canaux.length === 0 || isUploading}
+            onClick={handleSubmit}
+            className="w-full bg-pnpe-blue hover:bg-pnpe-blue-light disabled:opacity-70 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-all"
           >
-            Envoyer pour validation
+            {isUploading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" /> Transfert en cours...
+              </>
+            ) : (
+              'Envoyer pour validation'
+            )}
           </button>
         </div>
       </div>
@@ -313,7 +352,8 @@ function DepotModal({ onClose, onSubmit }: any) {
 // Modal de Validation
 function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
   const [motif, setMotif] = useState('');
-  const [date, setDate] = useState('');
+  // Initialize with livrable's target date for better UX
+  const [date, setDate] = useState(livrable.dateCible ? livrable.dateCible.substring(0, 16) : '');
 
   return (
     <div className="fixed inset-0 bg-pnpe-blue/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in">
@@ -321,10 +361,8 @@ function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
         
         {/* Colonne Image (Grand format) */}
         <div className="flex-1 bg-gray-900 flex items-center justify-center p-4">
-          {livrable.piecesJointes && livrable.piecesJointes.length > 0 && livrable.piecesJointes[0].startsWith('data:image') ? (
+          {livrable.piecesJointes && livrable.piecesJointes.length > 0 ? (
             <img src={livrable.piecesJointes[0]} alt="Visuel" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
-          ) : livrable.brief && livrable.brief.startsWith('data:image') ? (
-            <img src={livrable.brief} alt="Visuel" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
           ) : (
             <div className="text-gray-500 flex flex-col items-center">
               <ImageIcon size={48} className="mb-2" />
@@ -354,8 +392,9 @@ function ValidationModal({ livrable, onClose, onValidate, onRefuse }: any) {
                 />
               </div>
               <button 
-                onClick={() => onValidate(date)}
-                className="w-full bg-pnpe-blue hover:bg-pnpe-blue-hover text-white font-bold py-3 rounded-md transition-colors"
+                onClick={() => onValidate(new Date(date).toISOString())}
+                disabled={!date}
+                className="w-full bg-pnpe-blue hover:bg-pnpe-blue-hover text-white font-bold py-3 rounded-md transition-colors disabled:opacity-50"
               >
                 Valider & Programmer
               </button>

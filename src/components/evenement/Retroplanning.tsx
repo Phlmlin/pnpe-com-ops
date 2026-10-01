@@ -3,9 +3,11 @@
 import { CalendarRange, CheckCircle, Clock, Search, Plus } from 'lucide-react';
 import { ProjetEvenement } from '@/types/com-ops';
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 
 export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
-  const { livrables: contextLivrables, openDrawer } = useLivrables();
+  const { livrables: contextLivrables } = useLivrables();
+  const { openDrawer } = useUI();
   
   // Récupérer tous les livrables associés au projet via le champ projetId, ou via les lots
   const livrables = contextLivrables.filter(l => l.projetId === projet.id || projet.lotsTravail.flatMap(lot => lot.livrablesId).includes(l.id))

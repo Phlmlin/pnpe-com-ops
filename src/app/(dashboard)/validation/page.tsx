@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { useLivrables } from '@/context/LivrablesContext';
-import { Check, CheckCircle, Eye, MessageSquare } from 'lucide-react';
+import { Check, CheckCircle, Eye, MessageSquare, Lock } from 'lucide-react';
 
 export default function ValidationPage() {
-  const { livrables, utilisateurs, updateLivrableStatus } = useLivrables();
+  const { livrables, utilisateurs, currentUser, updateLivrableStatus } = useLivrables();
   
   // On ne prend que les livrables en attente de validation
   const pendingLivrables = livrables.filter(l => l.statut === 'en_validation');
+  
+  const canValidate = currentUser?.droits?.pouvoirValidation === true;
 
   const getUserName = (id?: string) => {
     const user = utilisateurs.find(u => u.id === id);
@@ -19,16 +21,15 @@ export default function ValidationPage() {
   const [inputValue, setInputValue] = useState('');
 
   const handleActionClick = (livrable: any, type: 'program' | 'correct') => {
+    if (!canValidate) return;
     setActiveAction({ id: livrable.id, type });
-    setInputValue(type === 'program' ? livrable.dateCible.substring(0, 16) : '');
+    setInputValue(type === 'program' ? (livrable.dateCible ? livrable.dateCible.substring(0, 16) : '') : '');
   };
 
   const submitAction = (id: string) => {
-    if (!activeAction) return;
+    if (!activeAction || !canValidate) return;
     if (activeAction.type === 'program') {
-      // Pour une vraie implémentation, on pourrait mettre à jour la date cible, 
-      // ici on valide et on met à jour la date
-      updateLivrableStatus(id, 'programme', undefined, inputValue);
+      updateLivrableStatus(id, 'programme', undefined, new Date(inputValue).toISOString());
     } else {
       updateLivrableStatus(id, 'a_corriger', inputValue);
     }
@@ -50,6 +51,16 @@ export default function ValidationPage() {
           {pendingLivrables.length} livrable(s) en attente
         </div>
       </div>
+
+      {!canValidate && pendingLivrables.length > 0 && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg flex items-start gap-3">
+          <Lock size={20} className="text-blue-500 mt-0.5" />
+          <div>
+            <h3 className="font-bold text-sm">Mode Lecture Seule</h3>
+            <p className="text-sm">Vous n'avez pas les droits d'approbation. Vous pouvez consulter l'état d'avancement, mais seule la direction peut valider.</p>
+          </div>
+        </div>
+      )}
 
       {pendingLivrables.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-lg hairline-border p-10 shadow-sm">
@@ -79,7 +90,7 @@ export default function ValidationPage() {
               </div>
 
               {/* Aperçu (Zone grise) */}
-              <div className="h-48 bg-gray-100 relative group flex flex-col items-center justify-center border-b border-gray-100">
+              <div className="h-48 bg-gray-100 relative group flex flex-col items-center justify-center border-b border-gray-100 overflow-hidden">
                 {livrable.piecesJointes && livrable.piecesJointes.length > 0 ? (
                   <img src={livrable.piecesJointes[0]} alt="Aperçu" className="w-full h-full object-cover" />
                 ) : (
@@ -90,11 +101,13 @@ export default function ValidationPage() {
                 )}
                 
                 {/* Overlay au survol */}
-                <div className="absolute inset-0 bg-pnpe-blue/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                  <button className="bg-white text-pnpe-dark font-bold px-4 py-2 rounded text-sm shadow-sm flex items-center gap-2">
-                    <Eye size={16} /> Ouvrir en grand
-                  </button>
-                </div>
+                {livrable.piecesJointes && livrable.piecesJointes.length > 0 && (
+                  <div className="absolute inset-0 bg-pnpe-blue/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => window.open(livrable.piecesJointes![0], '_blank')}>
+                    <button className="bg-white text-pnpe-dark font-bold px-4 py-2 rounded text-sm shadow-sm flex items-center gap-2">
+                      <Eye size={16} /> Ouvrir l'image
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Méta-informations */}
@@ -116,9 +129,13 @@ export default function ValidationPage() {
                 </div>
               </div>
 
-              {/* Actions dynamiques */}
+              {/* Actions dynamiques - Rôles basés */}
               <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-col gap-3 transition-all">
-                {activeAction?.id === livrable.id ? (
+                {!canValidate ? (
+                  <div className="text-center text-xs font-bold text-orange-600 bg-orange-100 py-2.5 rounded border border-orange-200">
+                    En attente de validation
+                  </div>
+                ) : activeAction?.id === livrable.id ? (
                   <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-2">
                     {activeAction.type === 'program' ? (
                       <>
@@ -130,7 +147,7 @@ export default function ValidationPage() {
                           className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-pnpe-blue focus:border-pnpe-blue"
                         />
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => submitAction(livrable.id)} className="flex-1 bg-pnpe-blue text-white font-bold py-2 rounded text-sm">Confirmer</button>
+                          <button disabled={!inputValue} onClick={() => submitAction(livrable.id)} className="flex-1 bg-pnpe-blue text-white font-bold py-2 rounded text-sm disabled:opacity-50">Confirmer</button>
                           <button onClick={() => setActiveAction(null)} className="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded text-sm">Annuler</button>
                         </div>
                       </>
@@ -144,7 +161,7 @@ export default function ValidationPage() {
                           className="w-full text-sm p-2 border border-gray-200 rounded focus:ring-pnpe-blue focus:border-pnpe-blue resize-none h-20"
                         />
                         <div className="flex gap-2 mt-2">
-                          <button onClick={() => submitAction(livrable.id)} className="flex-1 bg-red-600 text-white font-bold py-2 rounded text-sm">Envoyer</button>
+                          <button disabled={!inputValue} onClick={() => submitAction(livrable.id)} className="flex-1 bg-red-600 text-white font-bold py-2 rounded text-sm disabled:opacity-50">Envoyer</button>
                           <button onClick={() => setActiveAction(null)} className="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded text-sm">Annuler</button>
                         </div>
                       </>

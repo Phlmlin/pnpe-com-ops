@@ -21,12 +21,14 @@ import { NewLivrableDrawer } from '@/components/NewLivrableDrawer';
 import { NewProjetDrawer } from '@/components/NewProjetDrawer';
 import { AddUserModal } from '@/components/AddUserModal';
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { usePathname } from 'next/navigation';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { livrables, projets, utilisateurs, currentUser, isDrawerOpen, openDrawer, closeDrawer, isProjetDrawerOpen, openProjetDrawer, closeProjetDrawer, openUserModal } = useLivrables();
+  const { livrables, projets, utilisateurs, currentUser } = useLivrables();
+  const { isDrawerOpen, openDrawer, closeDrawer, isProjetDrawerOpen, openProjetDrawer, closeProjetDrawer, openUserModal } = useUI();
   
   const validationsCount = livrables.filter(l => l.statut === 'en_validation').length;
 

@@ -3,18 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { Livrable, StatutLivrable, ProjetEvenement, Utilisateur, ROLES_PAR_DEFAUT } from '@/types/com-ops';
 import { supabase } from '@/lib/supabaseClient';
+import { useUI } from './UIContext';
 
+// Pas de mock de données par défaut au chargement (base saine), 
+// on garde juste des fallback locaux le temps que Supabase charge ou si offline.
 const DEFAULT_USERS: Utilisateur[] = [
   { id: 'u1', nom: 'Admin', prenom: 'Directeur', email: 'admin@pnpe.ga', role: 'Admin / Directeur', droits: { depotContenu: true, pouvoirValidation: true, accesLimite: false } },
-  { id: 'u2', nom: 'Rédacteur', prenom: 'CM', email: 'cm@pnpe.ga', role: 'Rédacteur / CM', droits: { depotContenu: true, pouvoirValidation: false, accesLimite: false } },
-  { id: 'u3', nom: 'Graphiste', prenom: 'Vidéo', email: 'graphiste@pnpe.ga', role: 'Graphiste / Vidéo', droits: { depotContenu: true, pouvoirValidation: false, accesLimite: false } }
 ];
-
-interface Toast {
-  id: string;
-  message: string;
-  type: 'success' | 'info';
-}
 
 interface LivrablesContextType {
   livrables: Livrable[];
@@ -23,37 +18,24 @@ interface LivrablesContextType {
   addLivrable: (livrable: Omit<Livrable, 'id'>, lotId?: string) => void;
   updateLivrableStatus: (id: string, newStatut: StatutLivrable, remark?: string, newDateCible?: string) => void;
   deleteLivrable: (id: string) => void;
-  toasts: Toast[];
-  addToast: (message: string, type?: 'success' | 'info') => void;
-  removeToast: (id: string) => void;
   isLoading: boolean;
-  isDrawerOpen: boolean;
-  defaultProjetIdForDrawer: string | null;
-  defaultLotIdForDrawer: string | null;
-  openDrawer: (projetId?: string, lotId?: string) => void;
-  closeDrawer: () => void;
   addProjet: (projet: Omit<ProjetEvenement, 'id' | 'chefDeProjetId' | 'jaugeAvancement' | 'lotsTravail' | 'membresInternes' | 'partenairesExternes'>) => void;
-  isProjetDrawerOpen: boolean;
-  openProjetDrawer: () => void;
-  closeProjetDrawer: () => void;
   addLotToProjet: (projetId: string, lot: { id: string; nom: string; description: string; livrablesId: string[] }) => void;
   addPartenaireToProjet: (projetId: string, userId: string) => void;
   addUtilisateur: (user: Omit<Utilisateur, 'id'> & { motDePasse?: string }) => void;
   rolesDisponibles: string[];
-  isUserModalOpen: boolean;
-  openUserModal: () => void;
-  closeUserModal: () => void;
   currentUser: Utilisateur | null;
 }
 
 const LivrablesContext = createContext<LivrablesContextType | undefined>(undefined);
 
 export function LivrablesProvider({ children }: { children: ReactNode }) {
+  const { addToast } = useUI();
+  
   const [livrables, setLivrables] = useState<Livrable[]>([]);
   const [projets, setProjets] = useState<ProjetEvenement[]>([]);
   const [utilisateurs, setUtilisateurs] = useState<Utilisateur[]>([]);
   const [currentUser, setCurrentUser] = useState<Utilisateur | null>(null);
-  const [toasts, setToasts] = useState<Toast[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Vérifier si Supabase est configuré
@@ -65,7 +47,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     if (isSupabaseConfigured) {
       fetchDataFromSupabase();
       
-      // Écouter les changements en temps réel sur la table livrables
+      // Écouter les changements en temps réel
       channel = supabase
         .channel('livrables_changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'livrables' }, (payload: any) => {
@@ -104,11 +86,10 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
   const fetchDataFromSupabase = async () => {
     setIsLoading(true);
     try {
-      // Fetch Livrables
-      const { data: livs, error: livsErr } = await supabase.from('livrables').select('*');
+      // Fetch Livrables - Optionnel: Ajouter un LIMIT ou une date pour éviter l'OOM
+      const { data: livs, error: livsErr } = await supabase.from('livrables').select('*').order('created_at', { ascending: false });
       if (livsErr) throw livsErr;
       
-      // On mappe la structure Supabase vers notre type TypeScript si besoin
       const formattedLivs: Livrable[] = (livs || []).map((l: any) => {
         let parsedCanaux = ['LinkedIn'];
         try {
@@ -126,7 +107,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           assigneA: l.assigne_a,
           projetId: l.projet_id,
           piecesJointes: l.pieces_jointes,
-          commentaires: [] // On peut charger les commentaires dans une query séparée si besoin
+          commentaires: []
         };
       });
       
@@ -178,16 +159,6 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addToast = (message: string, type: 'success' | 'info' = 'success') => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => removeToast(id), 4000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
   const addLivrable = async (livrable: Omit<Livrable, 'id'>, lotId?: string) => {
     let newLivrable: Livrable;
     
@@ -196,7 +167,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.from('livrables').insert([{
           titre: livrable.titre,
           format: livrable.format,
-          canal: livrable.canaux[0] || 'LinkedIn', // Colonne DB avec CHECK constraint
+          canal: livrable.canaux[0] || 'LinkedIn', 
           statut: livrable.statut,
           date_cible: livrable.dateCible,
           brief: livrable.brief,
@@ -215,7 +186,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           projetId: data.projet_id,
           commentaires: []
         };
-        setLivrables(prev => [...prev, newLivrable]);
+        setLivrables(prev => [newLivrable, ...prev]);
         
         addToast('Livrable sauvegardé dans Supabase !', 'success');
       } catch (err: any) {
@@ -224,16 +195,14 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
         return; // Stop if error
       }
     } else {
-      // Mock logic
       newLivrable = {
         ...livrable,
         id: `liv${livrables.length + 1}-${Math.random().toString(36).substr(2, 5)}`,
       };
-      setLivrables(prev => [...prev, newLivrable]);
+      setLivrables(prev => [newLivrable, ...prev]);
       addToast('Nouveau livrable créé (Mode Mock) !');
     }
 
-    // Si on l'a ajouté depuis un lot, on met à jour le lot dans le projet
     if (lotId && newLivrable.projetId) {
       setProjets(prev => prev.map(p => {
         if (p.id === newLivrable.projetId) {
@@ -250,65 +219,38 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
   };
 
   const updateLivrableStatus = async (id: string, newStatut: StatutLivrable, remark?: string, newDateCible?: string) => {
+    // Optimistic Update Local
+    setLivrables(prev => prev.map(l => l.id === id ? { ...l, statut: newStatut, ...(newDateCible ? { dateCible: newDateCible } : {}) } : l));
+
     if (isSupabaseConfigured) {
       try {
         const updateData: any = { statut: newStatut };
         if (newDateCible) updateData.date_cible = newDateCible;
-        // In a real app, remark would be inserted into a comments table. For now, we omit it or append to brief.
         
         const { error } = await supabase.from('livrables').update(updateData).eq('id', id);
         if (error) throw error;
-        // Si remark, l'ajouter aux commentaires (simplifié)
-        addToast(`Statut mis à jour (${newStatut}) dans Supabase !`, 'success');
-        
-        // Optimistic UI for Supabase (if real-time is slow)
-        setLivrables(prev => prev.map(l => l.id === id ? { ...l, statut: newStatut, ...(newDateCible ? { dateCible: newDateCible } : {}) } : l));
+        addToast(`Statut mis à jour (${newStatut}) !`, 'success');
       } catch (err: any) {
         console.error("SUPABASE UPDATE ERROR:", JSON.stringify(err, null, 2), err);
-        // Appliquer quand même la mise à jour en local (optimiste)
-        setLivrables(prev => prev.map(l => l.id === id ? { ...l, statut: newStatut, ...(newDateCible ? { dateCible: newDateCible } : {}) } : l));
         addToast(`Statut mis à jour localement (erreur Supabase: ${err?.message || 'inconnue'}).`, 'info');
       }
     } else {
-      // Mock logic
-      setLivrables(prev => prev.map(l => {
-        if (l.id === id) {
-          const updated = { ...l, statut: newStatut };
-          if (newDateCible) updated.dateCible = newDateCible;
-          if (remark) {
-            updated.commentaires = [
-              ...(updated.commentaires || []),
-              {
-                id: `c${Date.now()}`,
-                auteurId: utilisateurs[0]?.id || 'u1',
-                contenu: remark,
-                date: new Date().toISOString()
-              }
-            ];
-          }
-          return updated;
-        }
-        return l;
-      }));
-      if (newStatut === 'programme') addToast('Livrable validé et programmé !', 'success');
-      else if (newStatut === 'conception' || newStatut === 'a_corriger') addToast('Demande de retouche envoyée.', 'info');
-      else addToast('Statut mis à jour.', 'success');
+      addToast(`Statut mis à jour localement (${newStatut}).`);
     }
   };
 
   const deleteLivrable = async (id: string) => {
+    setLivrables(prev => prev.filter(l => l.id !== id));
     if (isSupabaseConfigured) {
       try {
         const { error } = await supabase.from('livrables').delete().eq('id', id);
         if (error) throw error;
-        setLivrables(prev => prev.filter(l => l.id !== id));
         addToast('Livrable supprimé.', 'success');
       } catch (err) {
         console.error(err);
         addToast("Erreur lors de la suppression.", 'info');
       }
     } else {
-      setLivrables(prev => prev.filter(l => l.id !== id));
       addToast('Livrable supprimé.', 'success');
     }
   };
@@ -346,27 +288,6 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [defaultProjetIdForDrawer, setDefaultProjetIdForDrawer] = useState<string | null>(null);
-  const [defaultLotIdForDrawer, setDefaultLotIdForDrawer] = useState<string | null>(null);
-
-  const openDrawer = (projetId?: string, lotId?: string) => {
-    setDefaultProjetIdForDrawer(projetId || null);
-    setDefaultLotIdForDrawer(lotId || null);
-    setIsDrawerOpen(true);
-  };
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-    setTimeout(() => {
-      setDefaultProjetIdForDrawer(null);
-      setDefaultLotIdForDrawer(null);
-    }, 300);
-  };
-
-  const [isProjetDrawerOpen, setIsProjetDrawerOpen] = useState(false);
-  const openProjetDrawer = () => setIsProjetDrawerOpen(true);
-  const closeProjetDrawer = () => setIsProjetDrawerOpen(false);
-
   const addLotToProjet = async (projetId: string, lot: { id: string; nom: string; description: string; livrablesId: string[] }) => {
     setProjets(prev => prev.map(p => {
       if (p.id === projetId) {
@@ -387,15 +308,9 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     addToast('Partenaire ajouté avec succès !', 'success');
   };
 
-  // --- Gestion des utilisateurs ---
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const openUserModal = () => setIsUserModalOpen(true);
-  const closeUserModal = () => setIsUserModalOpen(false);
-
   const addUtilisateur = async (user: Omit<Utilisateur, 'id'> & { motDePasse?: string }) => {
     if (isSupabaseConfigured) {
       try {
-        // 1. Créer le compte Auth via la Server Action (pour ne pas déconnecter l'admin)
         if (user.motDePasse) {
           const { createUserAuth } = await import('@/app/actions/createUser');
           const authRes = await createUserAuth(user.email, user.motDePasse, user.nom, user.prenom);
@@ -404,7 +319,6 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // 2. Insérer dans la table utilisateurs
         const { data, error } = await supabase.from('utilisateurs').insert([{
           nom: user.nom,
           prenom: user.prenom,
@@ -423,13 +337,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
         addToast(`${user.prenom} ${user.nom} ajouté à l'équipe !`, 'success');
       } catch (err: any) {
         console.error("SUPABASE USER ERROR:", JSON.stringify(err, null, 2), err);
-        // Fallback local
-        const newUser: Utilisateur = {
-          ...user,
-          id: `u${utilisateurs.length + 1}-${Math.random().toString(36).substr(2, 5)}`,
-        };
-        setUtilisateurs(prev => [...prev, newUser]);
-        addToast(`${user.prenom} ${user.nom} ajouté localement !`, 'info');
+        addToast(`Erreur d'ajout utilisateur: ${err.message}`, 'info');
       }
     } else {
       const newUser: Utilisateur = {
@@ -439,7 +347,6 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       setUtilisateurs(prev => [...prev, newUser]);
       addToast(`${user.prenom} ${user.nom} ajouté à l'équipe !`, 'success');
     }
-    closeUserModal();
   };
 
   const rolesDisponibles = useMemo(() => {
@@ -451,26 +358,10 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
 
   return (
     <LivrablesContext.Provider value={{ 
-      livrables, projets, utilisateurs, addLivrable, updateLivrableStatus, deleteLivrable, toasts, addToast, removeToast, isLoading,
-      isDrawerOpen, defaultProjetIdForDrawer, defaultLotIdForDrawer, openDrawer, closeDrawer,
-      addProjet, isProjetDrawerOpen, openProjetDrawer, closeProjetDrawer, addLotToProjet, addPartenaireToProjet,
-      addUtilisateur, rolesDisponibles, isUserModalOpen, openUserModal, closeUserModal, currentUser
+      livrables, projets, utilisateurs, addLivrable, updateLivrableStatus, deleteLivrable, isLoading,
+      addProjet, addLotToProjet, addPartenaireToProjet, addUtilisateur, rolesDisponibles, currentUser
     }}>
       {children}
-      
-      {/* Toast Container */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map(toast => (
-          <div 
-            key={toast.id} 
-            className={`px-4 py-3 rounded-md shadow-lg hairline-border flex items-center gap-2 transform transition-all duration-300 translate-y-0 opacity-100 ${
-              toast.type === 'success' ? 'bg-pnpe-blue text-white' : 'bg-pnpe-blue text-white'
-            }`}
-          >
-            <span className="text-sm font-medium">{toast.message}</span>
-          </div>
-        ))}
-      </div>
     </LivrablesContext.Provider>
   );
 }

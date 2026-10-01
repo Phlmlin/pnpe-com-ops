@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { X, UserPlus, Upload, CheckCircle, Lock } from 'lucide-react';
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 
 export function AddUserModal() {
-  const { isUserModalOpen, closeUserModal, addUtilisateur, rolesDisponibles, projets } = useLivrables();
+  const { addUtilisateur, rolesDisponibles, projets } = useLivrables();
+  const { isUserModalOpen, closeUserModal } = useUI();
   
   const [nomComplet, setNomComplet] = useState('');
   const [email, setEmail] = useState('');

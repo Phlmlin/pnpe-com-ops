@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { X, UploadCloud, Calendar as CalendarIcon, Link as LinkIcon, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Calendar as CalendarIcon, Link as LinkIcon, Image as ImageIcon, Loader2 } from 'lucide-react';
 
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 import { FormatLivrable, Canal } from '@/types/com-ops';
+import { uploadMediaToSupabase, dataURLtoBlob } from '@/utils/supabase/storageClient';
 
 interface NewLivrableDrawerProps {
   isOpen: boolean;
@@ -12,7 +14,8 @@ interface NewLivrableDrawerProps {
 }
 
 export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
-  const { addLivrable, projets, utilisateurs, defaultProjetIdForDrawer, defaultLotIdForDrawer } = useLivrables();
+  const { addLivrable, projets } = useLivrables();
+  const { defaultProjetIdForDrawer, defaultLotIdForDrawer } = useUI();
   
   const [titre, setTitre] = useState('');
   const [format, setFormat] = useState<FormatLivrable>('Flyer');
@@ -22,6 +25,8 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
   const [projetId, setProjetId] = useState('');
   const [assigneA, setAssigneA] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize projetId if opened with a default
   useEffect(() => {
@@ -39,14 +44,6 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
     // Instant preview (Optimistic)
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
-
-    // Compress image
-    try {
-      const compressedDataUrl = await compressImage(file);
-      setPreviewUrl(compressedDataUrl); // store compressed data to save it
-    } catch (error) {
-      console.error("Erreur de compression", error);
-    }
   };
 
   const compressImage = (file: File): Promise<string> => {
@@ -73,37 +70,72 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!titre || !date) return;
     
-    addLivrable({
-      titre,
-      format,
-      canaux,
-      statut: 'en_validation', // Changement ici: direct en validation
-      dateCible: new Date(date).toISOString(),
-      brief: brief || 'Nouveau brief...',
-      commentaires: [],
-      projetId: projetId || undefined,
-      assigneA: assigneA || undefined,
-      piecesJointes: previewUrl ? [previewUrl] : undefined
-    }, defaultLotIdForDrawer || undefined);
-    
-    // Reset et fermeture
-    setTitre('');
-    setBrief('');
-    setProjetId('');
-    setAssigneA('');
-    setPreviewUrl(null);
-    onClose();
+    setIsUploading(true);
+
+    try {
+      let finalUrl: string | undefined = undefined;
+
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        const file = fileInputRef.current?.files?.[0];
+        if (file) {
+          // Compression locale rapide
+          const compressedDataUrl = await compressImage(file);
+          const blob = dataURLtoBlob(compressedDataUrl);
+          
+          // Upload sur Supabase Storage
+          const uploadedUrl = await uploadMediaToSupabase(blob, 'medias');
+          
+          if (uploadedUrl) {
+            finalUrl = uploadedUrl;
+          } else {
+            console.warn("Upload Supabase échoué, fallback sur base64.");
+            finalUrl = compressedDataUrl;
+          }
+        }
+      }
+
+      addLivrable({
+        titre,
+        format,
+        canaux,
+        statut: 'en_validation', // Toujours en validation au départ
+        dateCible: new Date(date).toISOString(),
+        brief: brief || 'Nouveau brief...',
+        commentaires: [],
+        projetId: projetId || undefined,
+        assigneA: assigneA || undefined,
+        piecesJointes: finalUrl ? [finalUrl] : undefined
+      }, defaultLotIdForDrawer || undefined);
+      
+      // Cleanup
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      setTitre('');
+      setBrief('');
+      setProjetId('');
+      setAssigneA('');
+      setPreviewUrl(null);
+      setCanaux(['LinkedIn']);
+      setFormat('Flyer');
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
     <>
       <div 
         className="fixed inset-0 bg-pnpe-blue/40 backdrop-blur-sm z-40 transition-opacity animate-in fade-in"
-        onClick={onClose}
+        onClick={() => !isUploading && onClose()}
       />
       
       <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-white z-50 shadow-2xl flex flex-col transform transition-transform duration-300 animate-in slide-in-from-right">
@@ -115,7 +147,8 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
           </div>
           <button 
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-pnpe-dark hover:bg-white rounded-full transition-colors hairline-border"
+            disabled={isUploading}
+            className="p-2 text-gray-400 hover:text-pnpe-dark hover:bg-white rounded-full transition-colors hairline-border disabled:opacity-50"
           >
             <X size={18} />
           </button>
@@ -132,9 +165,29 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 value={titre}
                 onChange={e => setTitre(e.target.value)}
                 type="text" 
+                disabled={isUploading}
                 placeholder="Ex: Teaser vidéo J-15"
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue transition-colors"
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue transition-colors disabled:opacity-50"
               />
+            </div>
+
+            {/* Fichier (Nouveau) */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Visuel (optionnel)</label>
+              <div 
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                className={`w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50 overflow-hidden relative transition-colors ${!isUploading ? 'cursor-pointer hover:bg-gray-100 hover:border-pnpe-blue' : 'opacity-80'}`}
+              >
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-contain" />
+                ) : (
+                  <>
+                    <ImageIcon size={24} className="text-gray-400 mb-2" />
+                    <span className="text-xs text-gray-500 font-medium">Cliquez pour ajouter l'image</span>
+                  </>
+                )}
+              </div>
+              <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
             </div>
 
             {/* Format & Canal */}
@@ -144,13 +197,15 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 <select 
                   value={format}
                   onChange={e => setFormat(e.target.value as FormatLivrable)}
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
+                  disabled={isUploading}
+                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue disabled:opacity-50"
                 >
                   <option value="Flyer">Flyer</option>
                   <option value="Carrousel">Carrousel</option>
                   <option value="Vidéo">Vidéo</option>
                   <option value="Communiqué">Communiqué</option>
                   <option value="Bâche">Bâche</option>
+                  <option value="Offre">Offre d'emploi</option>
                 </select>
               </div>
               <div>
@@ -160,8 +215,9 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                     <button
                       key={c}
                       type="button"
+                      disabled={isUploading}
                       onClick={() => setCanaux(prev => prev.includes(c) ? prev.filter(p => p !== c) : [...prev, c])}
-                      className={`px-3 py-1 text-xs rounded-full border transition-colors ${canaux.includes(c) ? 'bg-pnpe-blue text-white border-pnpe-blue font-bold' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
+                      className={`px-3 py-1 text-xs rounded-full border transition-colors disabled:opacity-50 ${canaux.includes(c) ? 'bg-pnpe-blue text-white border-pnpe-blue font-bold' : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'}`}
                     >
                       {c}
                     </button>
@@ -178,7 +234,8 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
               <select 
                 value={projetId}
                 onChange={e => setProjetId(e.target.value)}
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
+                disabled={isUploading}
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue disabled:opacity-50"
               >
                 <option value="">-- Campagne Générale --</option>
                 {projets.map(p => (
@@ -197,74 +254,52 @@ export function NewLivrableDrawer({ isOpen, onClose }: NewLivrableDrawerProps) {
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 type="date" 
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
+                disabled={isUploading}
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue disabled:opacity-50"
               />
             </div>
 
             {/* Brief */}
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Brief créatif & Copywriting</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Brief / Consignes</label>
               <textarea 
                 value={brief}
                 onChange={e => setBrief(e.target.value)}
                 rows={4}
-                placeholder="Décrivez ce qui doit être produit..."
-                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue resize-none"
+                disabled={isUploading}
+                className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue resize-none disabled:opacity-50"
+                placeholder="Décrivez les objectifs, le texte souhaité, ou les contraintes..."
               ></textarea>
             </div>
 
-            {/* Fichiers */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Fichiers (Maquettes, Logos, etc.)</label>
-              <label className="w-full border-2 border-dashed border-gray-200 rounded-md p-6 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 hover:border-pnpe-blue transition-colors cursor-pointer group">
-                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Aperçu" className="max-h-32 rounded-md object-contain" />
-                ) : (
-                  <>
-                    <UploadCloud size={24} className="mb-2 group-hover:text-pnpe-blue transition-colors" />
-                    <span className="text-sm font-medium">Cliquez ou glissez-déposez une image</span>
-                  </>
-                )}
-              </label>
-            </div>
-            
-            {/* Assignation */}
-            <div className="grid grid-cols-2 gap-4 pt-4 hairline-border-t">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                  <User size={14} /> Créateur
-                </label>
-                <select 
-                  value={assigneA}
-                  onChange={e => setAssigneA(e.target.value)}
-                  className="w-full text-sm p-2.5 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:outline-none focus:ring-1 focus:ring-pnpe-blue focus:border-pnpe-blue"
-                >
-                  <option value="">Sélectionner...</option>
-                  {utilisateurs.map(u => (
-                    <option key={`c-${u.id}`} value={u.id}>{u.prenom} {u.nom}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
           </div>
 
-          <div className="p-4 hairline-border-t bg-gray-50 flex justify-end gap-3">
+          {/* Footer Actions */}
+          <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
             <button 
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 bg-white hairline-border rounded-md hover:bg-gray-50 transition-colors"
+              disabled={isUploading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               Annuler
             </button>
             <button 
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-pnpe-blue rounded-md hover:bg-pnpe-blue-hover transition-colors shadow-sm"
+              disabled={!titre || !date || isUploading}
+              className="px-6 py-2 text-sm font-bold text-white bg-pnpe-blue hover:bg-pnpe-blue-hover rounded-md transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Créer le livrable
+              {isUploading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Enregistrement...
+                </>
+              ) : (
+                'Créer le livrable'
+              )}
             </button>
           </div>
         </form>
+
       </div>
     </>
   );

@@ -1,10 +1,12 @@
 "use client";
 
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
 export default function CalendrierPage() {
-  const { livrables, openDrawer } = useLivrables();
+  const { livrables } = useLivrables();
+  const { openDrawer } = useUI();
 
   // Helpers de couleur selon le canal
   const getCanalColor = (canal: string) => {

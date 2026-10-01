@@ -22,6 +22,7 @@ interface LivrablesContextType {
   utilisateurs: Utilisateur[];
   addLivrable: (livrable: Omit<Livrable, 'id'>) => void;
   updateLivrableStatus: (id: string, newStatut: StatutLivrable, remark?: string, newDateCible?: string) => void;
+  deleteLivrable: (id: string) => void;
   toasts: Toast[];
   addToast: (message: string, type?: 'success' | 'info') => void;
   removeToast: (id: string) => void;
@@ -240,6 +241,23 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteLivrable = async (id: string) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('livrables').delete().eq('id', id);
+        if (error) throw error;
+        setLivrables(prev => prev.filter(l => l.id !== id));
+        addToast('Livrable supprimé.', 'success');
+      } catch (err) {
+        console.error(err);
+        addToast("Erreur lors de la suppression.", 'info');
+      }
+    } else {
+      setLivrables(prev => prev.filter(l => l.id !== id));
+      addToast('Livrable supprimé.', 'success');
+    }
+  };
+
   const addProjet = async (projet: Omit<ProjetEvenement, 'id' | 'chefDeProjetId' | 'jaugeAvancement' | 'lotsTravail' | 'membresInternes' | 'partenairesExternes'>) => {
     if (isSupabaseConfigured) {
       try {
@@ -283,7 +301,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
 
   return (
     <LivrablesContext.Provider value={{ 
-      livrables, projets, utilisateurs, addLivrable, updateLivrableStatus, toasts, addToast, removeToast, isLoading,
+      livrables, projets, utilisateurs, addLivrable, updateLivrableStatus, deleteLivrable, toasts, addToast, removeToast, isLoading,
       isDrawerOpen, openDrawer, closeDrawer,
       addProjet, isProjetDrawerOpen, openProjetDrawer, closeProjetDrawer
     }}>

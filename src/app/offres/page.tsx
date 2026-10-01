@@ -2,11 +2,11 @@
 
 import { useState, useRef } from 'react';
 import { useLivrables } from '@/context/LivrablesContext';
-import { Briefcase, Plus, Image as ImageIcon, Check, X, MessageSquare, Clock, Calendar } from 'lucide-react';
+import { Briefcase, Plus, Image as ImageIcon, Check, X, MessageSquare, Clock, Calendar, Download } from 'lucide-react';
 import { Livrable, StatutLivrable, Canal } from '@/types/com-ops';
 
 export default function OffresPage() {
-  const { livrables, addLivrable, updateLivrableStatus, utilisateurs } = useLivrables();
+  const { livrables, addLivrable, updateLivrableStatus, deleteLivrable, utilisateurs } = useLivrables();
   
   // États de la page
   const [isDepotOpen, setIsDepotOpen] = useState(false);
@@ -22,6 +22,21 @@ export default function OffresPage() {
   const getUserName = (id?: string) => {
     const user = utilisateurs.find(u => u.id === id);
     return user ? user.prenom : 'Anonyme';
+  };
+
+  const handleDownloadAndClose = (item: Livrable) => {
+    // 1. Téléchargement si c'est une image base64
+    if (item.brief && item.brief.startsWith('data:image')) {
+      const link = document.createElement('a');
+      link.href = item.brief;
+      link.download = `offre_${item.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
+    // 2. Suppression du post (clôture)
+    deleteLivrable(item.id);
   };
 
   return (
@@ -70,6 +85,7 @@ export default function OffresPage() {
           color="bg-pnpe-green/20 text-green-800 border-pnpe-green"
           items={offresValidees}
           getUserName={getUserName}
+          onDownload={handleDownloadAndClose}
         />
       </div>
 
@@ -112,7 +128,7 @@ export default function OffresPage() {
 }
 
 // Composant Colonne
-function Column({ title, count, color, items, onClickCard, getUserName }: any) {
+function Column({ title, count, color, items, onClickCard, getUserName, onDownload }: any) {
   return (
     <div className="flex-1 flex flex-col bg-gray-50/50 rounded-xl hairline-border overflow-hidden">
       <div className={`p-4 border-t-4 bg-white hairline-border-b flex justify-between items-center ${color}`}>
@@ -123,24 +139,38 @@ function Column({ title, count, color, items, onClickCard, getUserName }: any) {
         {items.map((item: any) => (
           <div 
             key={item.id} 
-            onClick={() => onClickCard && onClickCard(item)}
-            className={`bg-white rounded-lg hairline-border p-3 shadow-sm transition-all ${onClickCard ? 'cursor-pointer hover:shadow-md hover:border-pnpe-blue/30' : ''}`}
+            className={`bg-white rounded-lg hairline-border p-3 shadow-sm transition-all relative ${onClickCard ? 'cursor-pointer hover:shadow-md hover:border-pnpe-blue/30' : ''}`}
           >
-            {/* Si c'est une image base64 on l'affiche, sinon placeholder */}
-            <div className="w-full h-32 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
-              {item.brief && item.brief.startsWith('data:image') ? (
-                <img src={item.brief} alt="Visuel" className="w-full h-full object-cover" />
-              ) : (
-                <ImageIcon size={24} className="text-gray-300" />
-              )}
+            <div onClick={() => onClickCard && onClickCard(item)}>
+              {/* Si c'est une image base64 on l'affiche, sinon placeholder */}
+              <div className="w-full h-32 bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
+                {item.brief && item.brief.startsWith('data:image') ? (
+                  <img src={item.brief} alt="Visuel" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon size={24} className="text-gray-300" />
+                )}
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 text-gray-600 rounded uppercase">{item.canal}</span>
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Clock size={12} /> {new Date(item.dateCible).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Par {getUserName(item.assigneA)}</p>
             </div>
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold px-2 py-1 bg-gray-100 text-gray-600 rounded uppercase">{item.canal}</span>
-              <span className="text-xs text-gray-500 flex items-center gap-1">
-                <Clock size={12} /> {new Date(item.dateCible).toLocaleDateString()}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">Par {getUserName(item.assigneA)}</p>
+            
+            {onDownload && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownload(item);
+                }}
+                className="mt-3 w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs py-2 rounded transition-colors"
+                title="Télécharger l'image et retirer de la liste"
+              >
+                <Download size={14} /> Télécharger & Clôturer
+              </button>
+            )}
           </div>
         ))}
         {items.length === 0 && (

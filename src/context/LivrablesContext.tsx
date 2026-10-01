@@ -153,22 +153,28 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       setProjets(formattedProjs);
       setUtilisateurs(formattedUsers);
 
-      // Auth current user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const { data: { user: authUser }, error: authErr } = await supabase.auth.getUser();
       if (authUser) {
         let found = formattedUsers.find(u => u.email === authUser.email);
-        if (!found && authUser.email === 'greenmoundounga@gmail.com') {
+        if (!found) {
           // Fallback d'urgence si non présent dans la table utilisateurs
           found = {
             id: authUser.id,
-            nom: 'Admin',
-            prenom: 'Super',
-            email: authUser.email,
-            role: 'Admin / Directeur',
-            droits: { depotContenu: true, pouvoirValidation: true, accesLimite: false }
+            nom: authUser.user_metadata?.nom || 'Admin',
+            prenom: authUser.user_metadata?.prenom || 'Super',
+            email: authUser.email || '',
+            role: authUser.email === 'greenmoundounga@gmail.com' ? 'Admin / Directeur' : 'Equipe Com',
+            droits: { 
+              depotContenu: true, 
+              pouvoirValidation: authUser.email === 'greenmoundounga@gmail.com', 
+              accesLimite: false 
+            }
           };
         }
         if (found) setCurrentUser(found);
+      } else {
+        // Si aucun authUser trouvé par Supabase sur le client, forcer la déconnexion
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données Supabase', error);
@@ -376,11 +382,16 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
   }, [utilisateurs]);
 
   const logout = async () => {
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.auth.signOut();
+      }
+    } catch (err) {
+      console.error("Logout error", err);
+    } finally {
+      localStorage.clear();
+      window.location.href = '/login';
     }
-    localStorage.clear();
-    window.location.href = '/login';
   };
 
   return (

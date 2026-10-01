@@ -56,7 +56,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       // Écouter les changements en temps réel sur la table livrables
       channel = supabase
         .channel('livrables_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'livrables' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'livrables' }, (payload: any) => {
           console.log('Changement détecté !', payload);
           fetchDataFromSupabase(); // Pour faire simple, on recharge tout
         })
@@ -97,7 +97,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       if (livsErr) throw livsErr;
       
       // On mappe la structure Supabase vers notre type TypeScript si besoin
-      const formattedLivs: Livrable[] = (livs || []).map(l => ({
+      const formattedLivs: Livrable[] = (livs || []).map((l: any) => ({
         ...l,
         dateCible: l.date_cible,
         assigneA: l.assigne_a,
@@ -109,7 +109,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       const { data: projs, error: projsErr } = await supabase.from('projets').select('*');
       if (projsErr) throw projsErr;
       
-      const formattedProjs: ProjetEvenement[] = (projs || []).map(p => ({
+      const formattedProjs: ProjetEvenement[] = (projs || []).map((p: any) => ({
         ...p,
         dateDebut: p.date_debut,
         dateFin: p.date_fin,
@@ -124,7 +124,7 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       const { data: users, error: usersErr } = await supabase.from('utilisateurs').select('*');
       if (usersErr) throw usersErr;
 
-      const formattedUsers: Utilisateur[] = (users || []).map(u => ({
+      const formattedUsers: Utilisateur[] = (users || []).map((u: any) => ({
         id: u.id,
         nom: u.nom,
         prenom: u.prenom,

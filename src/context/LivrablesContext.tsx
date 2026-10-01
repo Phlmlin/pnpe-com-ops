@@ -130,16 +130,23 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       const { data: users, error: usersErr } = await supabase.from('utilisateurs').select('*');
       if (usersErr) throw usersErr;
 
-      const formattedUsers: Utilisateur[] = (users || []).map((u: any) => ({
-        id: u.id,
-        nom: u.nom,
-        prenom: u.prenom,
-        email: u.email,
-        role: u.role,
-        avatarUrl: u.avatar_url,
-        droits: u.droits || { depotContenu: true, pouvoirValidation: false, accesLimite: false },
-        projetLimiteId: u.projet_limite_id
-      }));
+      const formattedUsers: Utilisateur[] = (users || []).map((u: any) => {
+        const isAdmin = u.role === 'admin_directeur' || u.role === 'Admin / Directeur' || u.email === 'greenmoundounga@gmail.com';
+        return {
+          id: u.id,
+          nom: u.nom,
+          prenom: u.prenom,
+          email: u.email,
+          role: u.role,
+          avatarUrl: u.avatar_url,
+          droits: u.droits || { 
+            depotContenu: true, 
+            pouvoirValidation: isAdmin, 
+            accesLimite: u.role === 'partenaire_externe' 
+          },
+          projetLimiteId: u.projet_limite_id
+        };
+      });
 
       setLivrables(formattedLivs);
       setProjets(formattedProjs);
@@ -148,7 +155,18 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
       // Auth current user
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
-        const found = formattedUsers.find(u => u.email === authUser.email);
+        let found = formattedUsers.find(u => u.email === authUser.email);
+        if (!found && authUser.email === 'greenmoundounga@gmail.com') {
+          // Fallback d'urgence si non présent dans la table utilisateurs
+          found = {
+            id: authUser.id,
+            nom: 'Admin',
+            prenom: 'Super',
+            email: authUser.email,
+            role: 'Admin / Directeur',
+            droits: { depotContenu: true, pouvoirValidation: true, accesLimite: false }
+          };
+        }
         if (found) setCurrentUser(found);
       }
     } catch (error) {

@@ -96,7 +96,12 @@ export default function PipelinePage() {
                     </div>
                     
                     <h4 className="text-sm font-semibold text-pnpe-dark mb-1 leading-tight">{livrable.titre}</h4>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{livrable.brief}</p>
+                    {/* Si le "brief" contient en fait une image (data URL), l'afficher plutôt que le code brut */}
+                    {livrable.brief?.startsWith('data:image') ? (
+                      <img src={livrable.brief} alt={livrable.titre} className="w-full h-28 object-cover rounded-md mb-3" />
+                    ) : (
+                      <p className="text-xs text-gray-500 line-clamp-2 mb-3">{livrable.brief}</p>
+                    )}
                     
                     <div className="flex justify-between items-center mt-auto pt-3 hairline-border-t">
                       <div className="flex items-center gap-1 text-xs text-gray-500">

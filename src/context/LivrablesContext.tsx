@@ -172,8 +172,9 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           };
         }
         if (found) setCurrentUser(found);
-      } else {
+      } else if (window.location.pathname !== '/login') {
         // Si aucun authUser trouvé par Supabase sur le client, forcer la déconnexion
+        // (pas de redirection si on est déjà sur /login : évite une boucle de rechargement infinie)
         window.location.href = '/login';
       }
     } catch (error) {

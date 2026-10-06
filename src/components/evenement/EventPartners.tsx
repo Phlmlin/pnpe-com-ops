@@ -3,6 +3,7 @@
 import { Users, Mail, Shield, Plus, X, UserPlus } from 'lucide-react';
 import { ProjetEvenement } from '@/types/com-ops';
 import { useLivrables } from '@/context/LivrablesContext';
+import { useUI } from '@/context/UIContext';
 import { useState } from 'react';
 
 const getRoleBadgeColor = (role: string) => {
@@ -15,7 +16,8 @@ const getRoleBadgeColor = (role: string) => {
 };
 
 export function EventPartners({ projet }: { projet: ProjetEvenement }) {
-  const { utilisateurs, addPartenaireToProjet, openUserModal, currentUser } = useLivrables();
+  const { utilisateurs, addPartenaireToProjet, currentUser } = useLivrables();
+  const { openUserModal } = useUI();
   const partenaires = utilisateurs.filter(u => projet.partenairesExternes.includes(u.id));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState('');

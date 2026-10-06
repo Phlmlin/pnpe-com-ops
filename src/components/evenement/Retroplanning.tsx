@@ -6,8 +6,15 @@ import { useLivrables } from '@/context/LivrablesContext';
 import { useUI } from '@/context/UIContext';
 
 export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
-  const { livrables: contextLivrables } = useLivrables();
+  const { livrables: contextLivrables, utilisateurs } = useLivrables();
   const { openDrawer } = useUI();
+
+  // Résout un identifiant utilisateur vers "Prénom Nom" (évite d'afficher un UUID brut)
+  const getUserName = (id?: string) => {
+    if (!id) return 'Non assigné';
+    const user = utilisateurs.find(u => u.id === id);
+    return user ? `${user.prenom} ${user.nom}` : 'Non assigné';
+  };
   
   // Récupérer tous les livrables associés au projet via le champ projetId, ou via les lots
   const livrables = contextLivrables.filter(l => l.projetId === projet.id || projet.lotsTravail.flatMap(lot => lot.livrablesId).includes(l.id))
@@ -56,7 +63,7 @@ export function Retroplanning({ projet }: { projet: ProjetEvenement }) {
                   <span className="bg-gray-100 px-2 py-1 rounded">{livrable.format}</span>
                 </td>
                 <td className="py-3 text-gray-600 text-xs">
-                  {livrable.assigneA || 'Non assigné'}
+                  {getUserName(livrable.assigneA)}
                 </td>
                 <td className="py-3 text-gray-600 text-xs font-medium">
                   {new Date(livrable.dateCible).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}

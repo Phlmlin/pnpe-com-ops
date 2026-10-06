@@ -1,12 +1,22 @@
 "use client";
 
+import { useState } from 'react';
 import { useLivrables } from '@/context/LivrablesContext';
 import { useUI } from '@/context/UIContext';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Canal } from '@/types/com-ops';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Filter, Check } from 'lucide-react';
 
 export default function CalendrierPage() {
   const { livrables } = useLivrables();
   const { openDrawer } = useUI();
+
+  // Vue Mois / Semaine + filtre par canal (fonctionnels)
+  const [view, setView] = useState<'mois' | 'semaine'>('mois');
+  const [canalFilter, setCanalFilter] = useState<Canal | null>(null);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+
+  // Canaux réellement présents dans les livrables
+  const canaux: Canal[] = Array.from(new Set(livrables.flatMap(l => l.canaux || [])));
 
   // Helpers de couleur selon le canal
   const getCanalColor = (canal: string) => {
@@ -22,7 +32,16 @@ export default function CalendrierPage() {
   };
 
   const jours = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-  const dates = Array.from({ length: 14 }, (_, i) => i + 1); // Simulation de 2 semaines
+  // Vue Mois : 14 jours simulés, vue Semaine : 7 jours
+  const dates = Array.from({ length: view === 'mois' ? 14 : 7 }, (_, i) => i + 1);
+
+  // Applique le filtre canal aux livrables d'un jour donné
+  const itemsForDate = (date: number) =>
+    livrables.filter(l => {
+      if (new Date(l.dateCible).getDate() !== date) return false;
+      if (canalFilter && !(l.canaux || []).includes(canalFilter)) return false;
+      return true;
+    });
   
   return (
     <div className="p-6 max-w-7xl mx-auto w-full h-full flex flex-col">
@@ -34,13 +53,53 @@ export default function CalendrierPage() {
           </h1>
         </div>
         <div className="flex gap-3">
-          {/* Filtres simulés */}
-          <button className="bg-white hairline-border px-3 py-1.5 rounded-md text-sm font-medium text-gray-600 flex items-center gap-2 hover:bg-gray-50 transition-colors">
-            <Filter size={16} /> Filtrer par Canal
-          </button>
+          {/* Filtre par canal (fonctionnel) */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilterMenu(v => !v)}
+              className={`bg-white hairline-border px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors ${canalFilter ? 'text-pnpe-blue border-pnpe-blue/40' : 'text-gray-600'}`}
+            >
+              <Filter size={16} /> {canalFilter ? `Canal : ${canalFilter}` : 'Filtrer par Canal'}
+            </button>
+            {showFilterMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white hairline-border rounded-md shadow-lg z-30 py-1">
+                <button
+                  onClick={() => { setCanalFilter(null); setShowFilterMenu(false); }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Tous les canaux
+                  {!canalFilter && <Check size={14} className="text-pnpe-blue" />}
+                </button>
+                {canaux.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => { setCanalFilter(c); setShowFilterMenu(false); }}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    {c}
+                    {canalFilter === c && <Check size={14} className="text-pnpe-blue" />}
+                  </button>
+                ))}
+                {canaux.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-gray-400">Aucun canal pour le moment</p>
+                )}
+              </div>
+            )}
+          </div>
+          {/* Bascule Mois / Semaine (fonctionnelle) */}
           <div className="bg-white hairline-border rounded-md flex items-center p-1">
-            <button className="px-3 py-1 text-xs font-bold bg-gray-100 text-pnpe-dark rounded">Mois</button>
-            <button className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-pnpe-dark">Semaine</button>
+            <button
+              onClick={() => setView('mois')}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${view === 'mois' ? 'font-bold bg-gray-100 text-pnpe-dark' : 'text-gray-500 hover:text-pnpe-dark'}`}
+            >
+              Mois
+            </button>
+            <button
+              onClick={() => setView('semaine')}
+              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${view === 'semaine' ? 'font-bold bg-gray-100 text-pnpe-dark' : 'text-gray-500 hover:text-pnpe-dark'}`}
+            >
+              Semaine
+            </button>
           </div>
         </div>
       </div>
@@ -63,10 +122,9 @@ export default function CalendrierPage() {
           </div>
         ))}
 
-        {/* Cellules (Simulation des jours 1 à 14) */}
+        {/* Cellules des jours */}
         {dates.map((date) => {
-          // Placement aléatoire simulé basé sur la date pour l'exemple
-          const items = livrables.filter(l => new Date(l.dateCible).getDate() === date);
+          const items = itemsForDate(date);
           
           return (
             <div 

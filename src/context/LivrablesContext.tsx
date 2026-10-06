@@ -172,12 +172,10 @@ export function LivrablesProvider({ children }: { children: ReactNode }) {
           };
         }
         if (found) setCurrentUser(found);
-      } else {
+      } else if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         // Si aucun authUser trouvé par Supabase sur le client, forcer la déconnexion
-        // Uniquement si on n'est pas déjà sur la page de login pour éviter une boucle infinie
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
+        // (pas de redirection si on est déjà sur /login : évite une boucle de rechargement infinie)
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données Supabase', error);

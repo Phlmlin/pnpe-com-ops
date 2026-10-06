@@ -40,6 +40,20 @@ export function Sidebar() {
     return <FolderOpen size={18} className="text-gray-400" />;
   };
 
+  // Libellé lisible pour le rôle de l'utilisateur connecté
+  const roleLabel = (role?: string) => {
+    const labels: Record<string, string> = {
+      'admin_directeur': 'Admin / Directeur',
+      'Admin / Directeur': 'Admin / Directeur',
+      'redacteur_cm': 'Rédacteur / CM',
+      'graphiste_video': 'Graphiste / Vidéo',
+      'partenaire_externe': 'Partenaire externe',
+      'Chef de Service': 'Chef de Service',
+      'Equipe Com': 'Équipe Com',
+    };
+    return (role && labels[role]) || role || 'Utilisateur';
+  };
+
   return (
     <>
       <aside className="w-64 flex-shrink-0 hairline-border-r bg-white dark:bg-slate-900 h-screen flex flex-col sticky top-0 z-20 relative transition-colors">
@@ -180,8 +194,23 @@ export function Sidebar() {
 
         </div>
         
-        {/* Footer Sidebar (Optional settings/help) */}
+        {/* Footer Sidebar (utilisateur connecté + déconnexion) */}
         <div className="p-4 hairline-border-t space-y-3">
+          {currentUser && (
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-9 h-9 rounded-full bg-pnpe-blue/10 text-pnpe-blue flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {currentUser.prenom?.charAt(0)}{currentUser.nom?.charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-pnpe-dark dark:text-gray-100 truncate leading-tight">
+                  {currentUser.prenom} {currentUser.nom}
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                  {roleLabel(currentUser.role)}
+                </p>
+              </div>
+            </div>
+          )}
           <button 
             onClick={() => logout()}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-white hover:bg-red-500 rounded-md transition-colors border border-red-100"

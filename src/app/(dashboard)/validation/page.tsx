@@ -10,7 +10,10 @@ export default function ValidationPage() {
   // On ne prend que les livrables en attente de validation
   const pendingLivrables = livrables.filter(l => l.statut === 'en_validation');
   
-  const canValidate = currentUser?.droits?.pouvoirValidation === true;
+  // Un admin (par rôle) peut toujours valider, même si l'objet droits est absent/incomplet en base
+  const isAdminRole = ['admin_directeur', 'Admin / Directeur'].includes(currentUser?.role || '') ||
+    currentUser?.email === 'greenmoundounga@gmail.com';
+  const canValidate = currentUser?.droits?.pouvoirValidation === true || isAdminRole;
 
   const getUserName = (id?: string) => {
     const user = utilisateurs.find(u => u.id === id);
@@ -114,7 +117,11 @@ export default function ValidationPage() {
               <div className="p-4 flex-1">
                 <div className="mb-4">
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Brief initial</h4>
-                  <p className="text-sm text-gray-600 line-clamp-3">{livrable.brief}</p>
+                  {livrable.brief?.startsWith('data:image') ? (
+                    <img src={livrable.brief} alt={livrable.titre} className="w-full h-32 object-cover rounded-md" />
+                  ) : (
+                    <p className="text-sm text-gray-600 line-clamp-3">{livrable.brief}</p>
+                  )}
                 </div>
                 
                 <div className="flex justify-between items-center text-xs">
